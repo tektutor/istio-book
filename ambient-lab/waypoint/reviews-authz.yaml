@@ -1,0 +1,45 @@
+# The default routes of reviews plus the rules that istiod builds from
+# the AuthorizationPolicy in ch36/istio/reviews-authz.yaml: only GET
+# requests from productpage's identity. istiod puts the rules on the
+# listener's RBAC filter; the lab puts them on the virtual host, so
+# that it can change them while Envoy runs.
+resources:
+- "@type": type.googleapis.com/envoy.config.route.v3.RouteConfiguration
+  name: "inbound-vip|9080|http|reviews.bookinfo.svc.cluster.local"
+  virtual_hosts:
+  - name: "inbound|http|9080"
+    domains: ["*"]
+    typed_per_filter_config:
+      envoy.filters.http.rbac:
+        "@type": "type.googleapis.com/envoy.extensions.filters.http.rbac.\
+          v3.RBACPerRoute"
+        rbac:
+          rules:
+            action: ALLOW
+            policies:
+              "ns[bookinfo]-policy[reviews-viewers]-rule[0]":
+                permissions:
+                - and_rules:
+                    rules:
+                    - or_rules:
+                        rules:
+                        - header:
+                            name: ":method"
+                            string_match: { exact: GET }
+                principals:
+                - and_ids:
+                    ids:
+                    - or_ids:
+                        ids:
+                        - filter_state:                         # (1)
+                            key: io.istio.peer_principal
+                            string_match:
+                              exact: "spiffe://tektutor.org/ns/bookinfo/\
+                                sa/bookinfo-productpage"
+    routes:
+    - name: default
+      match: { prefix: / }
+      route:
+        cluster: "inbound-vip|9080|http|reviews.bookinfo.svc.cluster.local"
+        timeout: 0s
+        retry_policy: { retry_on: reset-before-request, num_retries: 2 }

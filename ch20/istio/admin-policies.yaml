@@ -1,0 +1,55 @@
+# What the admin annotations did, as Istio policies on the gateway:
+# only internal addresses may reach the admin host, and every request
+# must pass oauth2-proxy (the extension provider from Chapter 32).
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: admin-internal-only
+  namespace: shop
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: shop-edge                                # (1)
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        hosts: [admin.tektutor.test]
+        ports: ["443"]
+    from:
+    - source:
+        notRemoteIpBlocks: [10.0.0.0/8, 192.168.0.0/16]   # (2)
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: admin-login
+  namespace: shop
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: shop-edge
+  action: CUSTOM
+  provider:
+    name: oauth2-proxy                             # (3)
+  rules:
+  - to:
+    - operation:
+        hosts: [admin.tektutor.test]
+---
+# The cookie affinity of /api/basket, for the whole cart service.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: cart-cookie
+  namespace: shop
+spec:
+  host: cart
+  trafficPolicy:
+    loadBalancer:
+      consistentHash:
+        httpCookie:
+          name: shop-affinity                      # (4)
+          ttl: 3600s

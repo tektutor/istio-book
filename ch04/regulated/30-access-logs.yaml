@@ -1,0 +1,11 @@
+# Turn on Envoy access logs for every workload in the mesh. The
+# built-in envoy provider writes them to the proxy's standard output.
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: mesh-default
+  namespace: istio-system
+spec:
+  accessLogging:
+  - providers:
+    - name: envoy

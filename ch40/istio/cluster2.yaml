@@ -1,0 +1,30 @@
+# The same as cluster1.yaml for cluster2: its own cluster name and
+# network, the same mesh ID.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: cluster2
+  namespace: istio-system
+spec:
+  profile: default
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+    ingressGateways:
+    - name: istio-ingressgateway
+      enabled: false
+  values:
+    global:
+      meshID: mesh1                   # (1)
+      multiCluster:
+        clusterName: cluster2         # (2)
+      network: network2               # (3)
+      proxy:
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi

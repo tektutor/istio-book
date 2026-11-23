@@ -1,0 +1,30 @@
+# Fails the release when more than 1% of the requests to the canary fail.
+# Prometheus is the add-on of Chapter 8; the metric comes from the
+# callers' sidecars (reporter="source").
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: error-rate
+  namespace: shop
+spec:
+  args:
+  - name: service
+  metrics:
+  - name: error-rate
+    initialDelay: 1m                                           # (1)
+    interval: 1m
+    failureLimit: 1                                            # (2)
+    successCondition: len(result) > 0 && result[0] <= 0.01     # (3)
+    failureCondition: len(result) > 0 && result[0] > 0.01
+    provider:
+      prometheus:
+        address: http://prometheus.istio-system:9090
+        query: |
+          (sum(rate(istio_requests_total{reporter="source",
+              destination_service_name="{{args.service}}",
+              destination_service_namespace="shop",
+              response_code=~"5.."}[1m])) or vector(0))      # (4)
+          /
+          sum(rate(istio_requests_total{reporter="source",
+              destination_service_name="{{args.service}}",
+              destination_service_namespace="shop"}[1m]))

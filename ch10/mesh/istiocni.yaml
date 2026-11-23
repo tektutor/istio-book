@@ -1,0 +1,9 @@
+# The Istio CNI node agent. OpenShift needs it for every mesh: it sets
+# up traffic capture, so pods need no privileged init container.
+apiVersion: sailoperator.io/v1
+kind: IstioCNI
+metadata:
+  name: default                             # (1)
+spec:
+  namespace: istio-cni                      # (2)
+  version: v1.30.5

@@ -1,0 +1,23 @@
+# The routes for the HTTPRoute in ch36/istio/reviews-route-weights.yaml:
+# 90 percent of the requests to reviews-v1, 10 percent to reviews-v2.
+resources:
+- "@type": type.googleapis.com/envoy.config.route.v3.RouteConfiguration
+  name: "inbound-vip|9080|http|reviews.bookinfo.svc.cluster.local"
+  virtual_hosts:
+  - name: "inbound|http|9080"
+    domains: ["*"]
+    routes:
+    - name: bookinfo.reviews.0
+      match: { prefix: / }
+      route:
+        weighted_clusters:
+          clusters:
+          - name: "inbound-vip|9080|http|reviews-v1.bookinfo.svc.cluster.local"
+            weight: 90
+          - name: "inbound-vip|9080|http|reviews-v2.bookinfo.svc.cluster.local"
+            weight: 10
+        timeout: 0s
+        retry_policy:
+          retry_on: "connect-failure,refused-stream,unavailable,cancelled,\
+            retriable-status-codes"
+          num_retries: 2

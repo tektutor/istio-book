@@ -1,0 +1,11 @@
+# The capstone with sidecars: the namespace keeps istio-injection=enabled.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: shop
+resources:
+- ../base
+- authz.yaml
+- jwt.yaml
+- inventory-route.yaml
+patches:
+- path: rollout-routing.yaml                                   # (1)

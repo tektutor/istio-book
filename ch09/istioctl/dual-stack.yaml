@@ -1,0 +1,21 @@
+# Istio on a dual-stack cluster: istiod and every proxy handle IPv4 and
+# IPv6, and the istiod Service gets an address in each family.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: dual-stack
+  namespace: istio-system
+spec:
+  profile: default
+  meshConfig:
+    defaultConfig:
+      proxyMetadata:
+        ISTIO_DUAL_STACK: "true"          # (1)
+  values:
+    pilot:
+      env:
+        ISTIO_DUAL_STACK: "true"          # (2)
+      ipFamilyPolicy: RequireDualStack    # (3)
+    gateways:
+      istio-ingressgateway:
+        ipFamilyPolicy: RequireDualStack

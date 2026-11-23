@@ -1,0 +1,15 @@
+# Outlier detection for "where". In Istio, outlier detection also turns
+# on locality load balancing: endpoints in the caller's zone come first.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: where
+  namespace: zones
+spec:
+  host: where.zones.svc.cluster.local
+  trafficPolicy:
+    outlierDetection:
+      consecutive5xxErrors: 3             # (1)
+      interval: 5s                        # (2)
+      baseEjectionTime: 30s               # (3)
+      maxEjectionPercent: 100             # (4)

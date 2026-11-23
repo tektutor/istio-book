@@ -1,0 +1,45 @@
+# Layer 4 routing for the price feed from Chapter 14: 90 percent of new
+# connections to v1, 10 percent to v2. The split counts connections,
+# not messages, because the proxy cannot see the messages.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: feed
+  namespace: shop
+spec:
+  host: feed.shop.svc.cluster.local
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        idleTimeout: 2h                             # (1)
+        tcpKeepalive:                               # (2)
+          time: 300s
+          interval: 60s
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: feed
+  namespace: shop
+spec:
+  hosts:
+  - feed.shop.svc.cluster.local
+  tcp:
+  - match:
+    - port: 7070                                    # (3)
+    route:
+    - destination:
+        host: feed.shop.svc.cluster.local
+        subset: v1
+      weight: 90
+    - destination:
+        host: feed.shop.svc.cluster.local
+        subset: v2
+      weight: 10

@@ -1,0 +1,26 @@
+# Sources and conditions in one rule: callers from the shop or ingress
+# namespaces of this mesh's trust domains, reading the orders API, with
+# a user header, outside the internal paths.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: orders-sources
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: orders
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        trustDomains: ["tektutor.org", "cluster.local"]       # (1)
+        namespaces: ["shop", "ingress"]                        # (2)
+    to:
+    - operation:
+        methods: ["GET", "HEAD"]
+        paths: ["/api/orders/*"]
+        notPaths: ["/api/orders/internal/*"]                   # (3)
+    when:
+    - key: request.headers[x-shop-user]                        # (4)
+      values: ["*"]

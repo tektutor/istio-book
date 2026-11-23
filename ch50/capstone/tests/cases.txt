@@ -1,0 +1,15 @@
+# Acceptance tests of the capstone, for ch48/mesh-config/tests/mesh_tests.py
+# with the test clients of ch48/mesh-config/tests/clients.yaml.
+# CALLER (namespace/pod)  METHOD  URL  EXPECT  [HEADER]
+
+# R5: who may call what
+shop/test-orders  GET  http://inventory:8080/api/stock/1   200~available
+shop/test-curl    GET  http://inventory:8080/api/stock/1   403
+shop/test-curl    GET  http://orders:8080/api/orders/1001  200
+shop/test-orders  GET  http://orders:8080/api/orders/1001  403
+
+# R2: a client without mesh identity gets no connection at all
+legacy/test-plain GET  http://orders.shop:8080/api/orders/1001  000
+
+# R3: the public gateway's requests to orders need a JWT (curl adds http://)
+shop/test-curl GET public-istio.ingress/api/orders/1 403 Host:shop.tektutor.test

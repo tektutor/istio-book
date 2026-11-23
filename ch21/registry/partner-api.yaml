@@ -1,0 +1,26 @@
+# A partner API with two fixed servers. The sidecars do not ask DNS:
+# they send each connection to one of the two endpoints, with health
+# checks and load balancing like any Kubernetes Service.
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: partner-api
+  namespace: shop
+spec:
+  hosts:
+  - api.partner.tektutor.test
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: https
+    protocol: TLS
+  resolution: STATIC                    # (1)
+  endpoints:
+  - address: 203.0.113.10               # (2)
+    labels:
+      site: chennai
+  - address: 203.0.113.20
+    labels:
+      site: mumbai
+  exportTo:
+  - "."

@@ -1,0 +1,11 @@
+# Turns on OpenShift user workload monitoring, the Prometheus stack for
+# application metrics. Cluster monitoring must be on first; on OpenShift
+# Local, crc config set enable-cluster-monitoring true does that.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+data:
+  config.yaml: |
+    enableUserWorkload: true

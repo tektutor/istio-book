@@ -1,0 +1,16 @@
+# Deny the fault admin API of inventory to every caller.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: inventory-deny-admin
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: inventory
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        ports: ["8080"]                                        # (1)
+        paths: ["/admin/*"]                                    # (2)

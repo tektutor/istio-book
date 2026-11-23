@@ -1,0 +1,28 @@
+# Pull request 3: "Let the nightly reporting job read stock levels."
+# Replaces shop/inventory-allow.yaml.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: inventory-allow
+  namespace: shop
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  selector:
+    matchLabels:
+      app: inventory
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/shop/sa/orders
+        - cluster.local/ns/shop/sa/cart
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/stock/*"]
+  - to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/stock/*"]

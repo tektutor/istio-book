@@ -1,0 +1,13 @@
+# One URL per line. compare.sh sends each to both controllers.
+https://shop.tektutor.test/
+https://shop.tektutor.test/cart
+https://shop.tektutor.test/api/cart/kayal
+https://shop.tektutor.test/api/orders/1
+https://shop.tektutor.test/api/stock/SKU-1
+https://shop.tektutor.test/api/v1/cart/kayal
+https://shop.tektutor.test/api/v1/orders/1
+https://shop.tektutor.test/api/basket/kayal
+https://shop.tektutor.test/API/Cart/kayal
+https://shop.tektutor.test/api/cartography
+https://shop.tektutor.test/catalogue/books
+http://shop.tektutor.test/api/cart/kayal

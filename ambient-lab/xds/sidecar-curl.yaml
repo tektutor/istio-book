@@ -1,0 +1,3 @@
+# The curl pod has a sidecar, injected with the ambient profile.
+setWorkloads:
+  curl: { protocol: HBONE, nativeTunnel: true }

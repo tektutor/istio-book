@@ -1,0 +1,14 @@
+# A VirtualService that a team should not be able to create: it exports
+# its routes for the payments host to every namespace of the mesh.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: payments-override
+  namespace: shop
+spec:
+  hosts: ["payments.tektutor.test"]
+  exportTo: ["*"]
+  http:
+  - route:
+    - destination:
+        host: orders.shop.svc.cluster.local

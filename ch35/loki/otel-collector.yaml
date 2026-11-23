@@ -1,0 +1,99 @@
+# An OpenTelemetry Collector in istio-system that receives access logs
+# from the proxies and sends them to the Loki add-on. The pipeline is
+# the one of ch35/local/otelcol.yaml.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector
+  namespace: istio-system
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+    processors:
+      transform:
+        log_statements:
+        - context: log
+          statements:
+          - set(resource.attributes["service.name"], attributes["workload"])
+          - set(resource.attributes["k8s.namespace.name"],
+                attributes["namespace"])
+          - set(resource.attributes["k8s.pod.name"], attributes["pod"])
+      batch:
+        timeout: 1s
+    exporters:
+      otlphttp:
+        endpoint: http://loki.istio-system.svc.cluster.local:3100/otlp
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+    service:
+      extensions: [health_check]
+      pipelines:
+        logs:
+          receivers: [otlp]
+          processors: [transform, batch]
+          exporters: [otlphttp]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: istio-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: otel-collector
+        image: docker.io/otel/opentelemetry-collector-contrib:0.160.0
+        args: ["--config=/conf/config.yaml"]
+        ports:
+        - containerPort: 4317
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 13133
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: conf
+          mountPath: /conf
+      volumes:
+      - name: conf
+        configMap:
+          name: otel-collector
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: istio-system
+spec:
+  selector:
+    app: otel-collector
+  ports:
+  - name: grpc-otlp                                            # (1)
+    port: 4317
+    targetPort: 4317

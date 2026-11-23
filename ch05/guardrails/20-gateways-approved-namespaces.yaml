@@ -1,0 +1,40 @@
+# Guardrail 2: gateways only in namespaces that the platform team has
+# approved. Waypoints are gateways too, so they stay allowed everywhere.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: mesh-gateways-approved-namespaces
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: ["networking.istio.io", "gateway.networking.k8s.io"]
+      apiVersions: ["*"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["gateways"]
+  variables:
+  - name: isWaypoint                                          # (1)
+    expression: >-
+      request.resource.group == 'gateway.networking.k8s.io' &&
+      object.spec.gatewayClassName == 'istio-waypoint'
+  - name: approved                                            # (2)
+    expression: >-
+      has(namespaceObject.metadata.labels) &&
+      'mesh.tektutor.org/gateways' in namespaceObject.metadata.labels &&
+      namespaceObject.metadata.labels['mesh.tektutor.org/gateways'] ==
+      'allowed'
+  validations:
+  - expression: "variables.isWaypoint || variables.approved"
+    messageExpression: >-
+      'Gateways are allowed only in namespaces labelled
+      mesh.tektutor.org/gateways=allowed. Namespace ' +
+      request.namespace + ' is not.'
+    reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: mesh-gateways-approved-namespaces
+spec:
+  policyName: mesh-gateways-approved-namespaces
+  validationActions: ["Deny"]

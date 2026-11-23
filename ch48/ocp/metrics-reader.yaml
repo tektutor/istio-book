@@ -1,0 +1,29 @@
+# A service account whose token may read metrics from the Thanos querier,
+# and a Secret that holds a long-lived token for it.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rollouts-metrics
+  namespace: shop
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: shop-rollouts-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+- kind: ServiceAccount
+  name: rollouts-metrics
+  namespace: shop
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rollouts-metrics-token
+  namespace: shop
+  annotations:
+    kubernetes.io/service-account.name: rollouts-metrics
+type: kubernetes.io/service-account-token

@@ -1,0 +1,20 @@
+# Every bucket of an object store, each with its own host name, such as
+# invoices.storage.tektutor.test. A wildcard host needs a resolution
+# mode that works per request: DYNAMIC_DNS looks up the name from the
+# Host header or the TLS SNI of each request.
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: object-storage
+  namespace: shop
+spec:
+  hosts:
+  - "*.storage.tektutor.test"           # (1)
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: tls
+    protocol: TLS                       # (2)
+  resolution: DYNAMIC_DNS               # (3)
+  exportTo:
+  - "."

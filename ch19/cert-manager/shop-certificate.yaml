@@ -1,0 +1,19 @@
+# The shop's public certificate. cert-manager writes it into the Secret
+# shop-tls in the gateway's namespace and renews it before it expires.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: shop-tls
+  namespace: ingress                               # (1)
+spec:
+  secretName: shop-tls
+  dnsNames:
+  - shop.tektutor.test
+  duration: 2160h                                  # (2)
+  renewBefore: 360h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    kind: ClusterIssuer
+    name: lab-ca

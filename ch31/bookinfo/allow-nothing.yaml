@@ -1,0 +1,8 @@
+# Deny every request to every workload in bookinfo. An ALLOW policy with
+# no rules matches nothing, so nothing is allowed.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-nothing
+  namespace: bookinfo
+spec: {}                                                       # (1)

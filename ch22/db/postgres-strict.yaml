@@ -1,0 +1,13 @@
+# Only callers with a mesh identity may reach PostgreSQL: mutual TLS is
+# required on every port of the postgres pod.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: postgres
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  mtls:
+    mode: STRICT                                    # (1)

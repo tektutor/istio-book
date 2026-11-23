@@ -1,0 +1,30 @@
+# Istio for cluster1 of a multi-primary mesh on two networks: the lab
+# installation of Chapter 8 plus the three multi-cluster values.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: cluster1
+  namespace: istio-system
+spec:
+  profile: default
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+    ingressGateways:
+    - name: istio-ingressgateway
+      enabled: false
+  values:
+    global:
+      meshID: mesh1                   # (1)
+      multiCluster:
+        clusterName: cluster1         # (2)
+      network: network1               # (3)
+      proxy:
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi

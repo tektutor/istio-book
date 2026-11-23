@@ -1,0 +1,92 @@
+# The inbound side of the inventory sidecar, with the same two filters
+# as the orders sidecar. It ends mutual TLS and passes the requests to
+# the inventory application.
+#   18971  inbound, mutual TLS; the application listens on 18981
+node:
+  id: sidecar~127.0.0.1~inventory-5b8c7-q9w4z.shop~shop.svc.cluster.local
+  cluster: inventory.shop
+  metadata:
+    NAME: inventory-5b8c7-q9w4z
+    NAMESPACE: shop
+    WORKLOAD_NAME: inventory
+    OWNER: kubernetes://apis/apps/v1/namespaces/shop/deployments/inventory
+    CLUSTER_ID: Kubernetes
+    ISTIO_VERSION: 1.31.1
+    LABELS:
+      app: inventory
+      version: v1
+      service.istio.io/canonical-name: inventory
+      service.istio.io/canonical-revision: v1
+stats_config:
+  use_all_default_tags: false
+  stats_matcher:
+    inclusion_list:
+      patterns: [ { prefix: "istio" } ]
+static_resources:
+  listeners:
+  - name: virtualInbound
+    traffic_direction: INBOUND
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18971 }
+    filter_chains:
+    - transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.\
+            v3.DownstreamTlsContext"
+          require_client_certificate: true
+          common_tls_context:
+            tls_certificates:
+            - certificate_chain:
+                filename: /tmp/ch34-certs/inventory/cert-chain.pem
+              private_key: { filename: /tmp/ch34-certs/inventory/key.pem }
+            validation_context:
+              trusted_ca: { filename: /tmp/ch34-certs/root-cert.pem }
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: inbound_0.0.0.0_8080
+          route_config:
+            virtual_hosts:
+            - name: inbound|http|8080
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route: { cluster: "inbound|8080||" }
+          http_filters:
+          - name: istio.metadata_exchange                        # (1)
+            typed_config:
+              "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+              type_url: type.googleapis.com/io.istio.http.peer_metadata.Config
+              value:
+                downstream_discovery: [ { istio_headers: {} } ]
+                downstream_propagation: [ { istio_headers: {} } ]
+          - name: istio.stats
+            typed_config:
+              "@type": type.googleapis.com/stats.PluginConfig
+              disable_host_header_fallback: true                 # (2)
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+                router.v3.Router"
+  clusters:
+  - name: "inbound|8080||"
+    connect_timeout: 2s
+    metadata:
+      filter_metadata:
+        istio:
+          services:
+          - host: inventory.shop.svc.cluster.local
+            name: inventory
+            namespace: shop
+    load_assignment:
+      cluster_name: "inbound|8080||"
+      endpoints:
+      - lb_endpoints:
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18981 } } }
+admin:
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 19971 }

@@ -1,0 +1,22 @@
+# The limits of the global rate limit service. All requests to
+# /api/orders share 50 per second, and a request with an x-shop-user
+# header also counts against 10 per second for that user.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ratelimit-config
+  namespace: ratelimit
+data:
+  config.yaml: |
+    domain: shop                          # (1)
+    descriptors:
+    - key: path
+      value: orders-api
+      rate_limit:
+        unit: second
+        requests_per_unit: 50
+      descriptors:
+      - key: client                       # (2)
+        rate_limit:
+          unit: second
+          requests_per_unit: 10

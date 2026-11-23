@@ -1,0 +1,74 @@
+# The stand-in server from ch27/local/keepalive_server.py as a pod in
+# the shop namespace, with a keep-alive timeout of one second. Create
+# the ConfigMap with the script first:
+#   kubectl create configmap keepalive-server -n shop \
+#     --from-file=ch27/local/keepalive_server.py
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: keepalive-demo
+  namespace: shop
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keepalive-demo
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keepalive-demo
+  template:
+    metadata:
+      labels:
+        app: keepalive-demo
+        version: v1
+    spec:
+      serviceAccountName: keepalive-demo
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: server
+        image: docker.io/library/python:3.13-slim
+        command: ["python3", "/app/keepalive_server.py", "8080", "1.0"]  # (1)
+        env:
+        - name: HOST
+          value: 0.0.0.0                                       # (2)
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: script
+          mountPath: /app
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32Mi
+          limits:
+            memory: 64Mi
+      volumes:
+      - name: script
+        configMap:
+          name: keepalive-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keepalive-demo
+  namespace: shop
+spec:
+  selector:
+    app: keepalive-demo
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    appProtocol: http

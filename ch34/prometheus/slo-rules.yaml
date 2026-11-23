@@ -1,0 +1,66 @@
+# Recording and alerting rules for an availability SLO: 99.5% of the
+# requests to each service succeed, over 30 days. The error budget is
+# 0.5%. The alerts follow the multiwindow, multi-burn-rate method of
+# Google's SRE Workbook. Two of the series feed the Grafana dashboard.
+groups:
+- name: istio-slo
+  rules:
+  - record: service:istio_requests:rate5m                        # (1)
+    expr: |
+      sum by (destination_service_namespace, destination_service_name) (
+        rate(istio_requests_total{reporter="source"}[5m]))
+  - record: service:istio_request_errors:rate5m
+    expr: |
+      sum by (destination_service_namespace, destination_service_name) (
+        rate(istio_requests_total{reporter="source",
+                                  response_code=~"5.."}[5m]))
+      or service:istio_requests:rate5m * 0                       # (2)
+  - record: service:istio_request_error_ratio:rate5m
+    expr: |
+      service:istio_request_errors:rate5m
+        / service:istio_requests:rate5m
+  - record: service:istio_request_duration_milliseconds:p99_5m   # (3)
+    expr: |
+      histogram_quantile(0.99, sum by (destination_service_namespace,
+          destination_service_name, le) (
+        rate(istio_request_duration_milliseconds_bucket{
+               reporter="source"}[5m])))
+  - record: service:istio_request_error_ratio:rate30m
+    expr: |
+      sum by (destination_service_namespace, destination_service_name) (
+        rate(istio_requests_total{reporter="source",
+                                  response_code=~"5.."}[30m]))
+      / sum by (destination_service_namespace, destination_service_name) (
+        rate(istio_requests_total{reporter="source"}[30m]))
+  - record: service:istio_request_error_ratio:rate1h
+    expr: |
+      sum by (destination_service_namespace, destination_service_name) (
+        rate(istio_requests_total{reporter="source",
+                                  response_code=~"5.."}[1h]))
+      / sum by (destination_service_namespace, destination_service_name) (
+        rate(istio_requests_total{reporter="source"}[1h]))
+  - record: service:istio_request_error_ratio:rate6h
+    expr: |
+      sum by (destination_service_namespace, destination_service_name) (
+        rate(istio_requests_total{reporter="source",
+                                  response_code=~"5.."}[6h]))
+      / sum by (destination_service_namespace, destination_service_name) (
+        rate(istio_requests_total{reporter="source"}[6h]))
+  - alert: ErrorBudgetFastBurn                                   # (4)
+    expr: |
+      service:istio_request_error_ratio:rate1h > (14.4 * 0.005)
+      and service:istio_request_error_ratio:rate5m > (14.4 * 0.005)
+    labels: { severity: page }
+    annotations:
+      summary: >-
+        {{ $labels.destination_service_name }} uses its 30-day error
+        budget 14.4 times too fast: 2% of it in one hour
+  - alert: ErrorBudgetSlowBurn                                   # (5)
+    expr: |
+      service:istio_request_error_ratio:rate6h > (6 * 0.005)
+      and service:istio_request_error_ratio:rate30m > (6 * 0.005)
+    labels: { severity: page }
+    annotations:
+      summary: >-
+        {{ $labels.destination_service_name }} uses its 30-day error
+        budget 6 times too fast: 5% of it in six hours

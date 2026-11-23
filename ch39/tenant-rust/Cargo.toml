@@ -1,0 +1,19 @@
+[package]
+name = "tenant-check"
+version = "1.0.0"
+edition = "2021"
+description = "Rejects HTTP requests without a known tenant header"
+
+[lib]
+crate-type = ["cdylib"]                 # a .wasm module, not a Rust library
+
+[dependencies]
+proxy-wasm = "0.2.5"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = "z"                         # small module
+lto = true
+panic = "abort"
+strip = true

@@ -1,0 +1,44 @@
+# A production starting point for istioctl: a revisioned control plane
+# with two or more istiod replicas spread across zones, JSON logs, and
+# sizes that you replace with your own measurements (Chapter 45).
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: prod-1-31-1
+  namespace: istio-system
+spec:
+  profile: minimal                        # (1)
+  revision: 1-31-1                        # (2)
+  meshConfig:                             # (3)
+    accessLogFile: ""
+    outboundTrafficPolicy:
+      mode: ALLOW_ANY
+    defaultConfig:
+      terminationDrainDuration: 20s
+  components:
+    pilot:
+      k8s:
+        resources:                        # (4)
+          requests:
+            cpu: "1"
+            memory: 2Gi
+        hpaSpec:
+          minReplicas: 2
+          maxReplicas: 5
+  values:
+    pilot:
+      topologySpreadConstraints:          # (5)
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: istiod
+            istio.io/rev: 1-31-1
+    global:
+      logAsJson: true                     # (6)
+      proxy:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi

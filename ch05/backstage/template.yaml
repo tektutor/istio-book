@@ -1,0 +1,56 @@
+# A Backstage Software Template that adds a service to the mesh.
+# It renders the same files as new-mesh-service.sh and opens a pull
+# request in the mesh configuration repository.
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: mesh-service
+  title: Add a service to the mesh
+  description: Timeout and access policy for one service, with defaults.
+spec:
+  owner: group:default/platform-team
+  type: service
+  parameters:                                   # (1)
+  - title: Service
+    required: [namespace, name, port, callers]
+    properties:
+      namespace:
+        type: string
+        title: Namespace
+      name:
+        type: string
+        title: Service name
+        pattern: "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$"
+      port:
+        type: integer
+        title: Service port
+        default: 8080
+      callers:
+        type: array
+        title: Service accounts allowed to call this service
+        items:
+          type: string
+  steps:
+  - id: render                                  # (2)
+    name: Render the mesh files
+    action: fetch:template
+    input:
+      url: ./skeleton
+      targetPath: ./mesh/${{ parameters.namespace }}/${{ parameters.name }}
+      values:
+        namespace: ${{ parameters.namespace }}
+        name: ${{ parameters.name }}
+        port: ${{ parameters.port }}
+        callers: ${{ parameters.callers }}
+  - id: pr                                      # (3)
+    name: Open a pull request
+    action: publish:github:pull-request
+    input:
+      repoUrl: github.com?owner=tektutor&repo=mesh-config
+      branchName: add-${{ parameters.namespace }}-${{ parameters.name }}
+      title: Add ${{ parameters.namespace }}/${{ parameters.name }} to the mesh
+      description: Created from the mesh-service template.
+  output:
+    links:
+    - title: Pull request
+      url: ${{ steps.pr.output.remoteUrl }}

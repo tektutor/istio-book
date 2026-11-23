@@ -1,0 +1,14 @@
+# The shop's sidecars need the shop's own services and the control plane,
+# nothing else. Calls to other namespaces then fail, so list each one
+# that the shop really uses.
+apiVersion: networking.istio.io/v1
+kind: Sidecar
+metadata:
+  name: default                         # (1)
+  namespace: shop
+spec:
+  egress:
+  - hosts:
+    - "./*"                             # (2)
+    - "istio-system/*"                  # (3)
+    - "egress/httpbin.org"              # (4)

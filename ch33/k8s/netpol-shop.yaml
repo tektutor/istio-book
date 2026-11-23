@@ -1,0 +1,27 @@
+# Defence in depth for the sidecar namespace shop: only pods in shop, the
+# ingress gateway and Prometheus in istio-system may connect to its pods.
+# Your network plugin must enforce NetworkPolicy for this to work.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingress-from-mesh
+  namespace: shop
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:                                                      # (1)
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: shop
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress
+  - from:                                                      # (2)
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+    ports:
+    - { protocol: TCP, port: 15020 }
+    - { protocol: TCP, port: 15090 }

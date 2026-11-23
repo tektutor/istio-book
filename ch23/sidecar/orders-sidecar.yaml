@@ -1,0 +1,25 @@
+# A Sidecar for one workload: the orders pods. It lists exactly what
+# orders calls, and it describes the inbound port so that the sidecar
+# accepts traffic only there.
+apiVersion: networking.istio.io/v1
+kind: Sidecar
+metadata:
+  name: orders
+  namespace: shop
+spec:
+  workloadSelector:
+    labels:
+      app: orders                                 # (1)
+  ingress:
+  - port:
+      number: 8080
+      protocol: HTTP
+      name: http
+    defaultEndpoint: 127.0.0.1:8080               # (2)
+  egress:
+  - hosts:
+    - "./inventory.shop.svc.cluster.local"        # (3)
+    - "./postgres.shop.svc.cluster.local"
+    - "istio-system/*"
+  outboundTrafficPolicy:
+    mode: REGISTRY_ONLY                           # (4)

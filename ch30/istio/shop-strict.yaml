@@ -1,0 +1,9 @@
+# Accept only mutual TLS for every workload in the shop namespace.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default                                                # (1)
+  namespace: shop
+spec:
+  mtls:
+    mode: STRICT

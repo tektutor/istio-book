@@ -1,0 +1,59 @@
+# Test client pods for tests/mesh_tests.py. Each one runs with the service
+# account of a real caller, so its requests carry that caller's identity.
+# They use the label app: mesh-test, which no policy selects.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cart                     # cart arrives in a later release
+  namespace: shop
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-orders
+  namespace: shop
+  labels: {app: mesh-test}
+spec:
+  serviceAccountName: orders                                   # (1)
+  containers:
+  - name: client
+    image: curlimages/curl:8.16.0
+    command: ["sleep", "infinity"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-cart
+  namespace: shop
+  labels: {app: mesh-test}
+spec:
+  serviceAccountName: cart
+  containers:
+  - name: client
+    image: curlimages/curl:8.16.0
+    command: ["sleep", "infinity"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-curl
+  namespace: shop
+  labels: {app: mesh-test}
+spec:
+  serviceAccountName: curl
+  containers:
+  - name: client
+    image: curlimages/curl:8.16.0
+    command: ["sleep", "infinity"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-plain
+  namespace: legacy              # tests/namespace.yaml: no sidecar # (2)
+  labels: {app: mesh-test}
+spec:
+  containers:
+  - name: client
+    image: curlimages/curl:8.16.0
+    command: ["sleep", "infinity"]

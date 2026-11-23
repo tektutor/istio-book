@@ -1,0 +1,20 @@
+# Who can call what in the shop, and where routes go. One request a line:
+# CALLER (namespace/pod)  METHOD  URL  EXPECT  [HEADER]
+# EXPECT is a status code, or CODE~PATTERN to also search the body.
+# 000 means the connection was reset or timed out.
+
+# inventory: only orders and cart may read stock levels
+shop/test-orders  GET  http://inventory:8080/api/stock/1   200~available
+shop/test-cart    GET  http://inventory:8080/api/stock/1   200
+shop/test-curl    GET  http://inventory:8080/api/stock/1   403
+shop/test-orders  POST http://inventory:8080/admin/faults  403
+legacy/test-plain GET  http://inventory.shop:8080/api/stock/1   403
+
+# orders: the curl pod and the default service account may call it
+shop/test-curl    GET  http://orders:8080/api/orders/1001  200
+shop/test-orders  GET  http://orders:8080/api/orders/1001  403
+legacy/test-plain GET  http://orders.shop:8080/api/orders/1001  403
+
+# routes: beta testers get inventory v2, everybody else gets v1
+shop/test-orders  GET  http://inventory:8080/api/stock/1  200~-v2-  x-beta:true
+shop/test-orders  GET  http://inventory:8080/api/stock/1  200~inventory-(?!v2-)

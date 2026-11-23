@@ -1,0 +1,9 @@
+# Expected result: denied by guardrail 3.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: allow-plaintext
+  namespace: shop
+spec:
+  mtls:
+    mode: PERMISSIVE

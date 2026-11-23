@@ -1,0 +1,182 @@
+# TekTutor Shop as it ran on Ingress NGINX: 12 routes on three hosts,
+# with the annotations that real setups collect over the years.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shop-web
+  namespace: shop
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/permanent-redirect-code: "301"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts: [shop.tektutor.test]
+    secretName: shop-tls
+  rules:
+  - host: shop.tektutor.test
+    http:
+      paths:
+      - path: /                                    # route 1
+        pathType: Prefix
+        backend: {service: {name: frontend, port: {number: 8080}}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shop-api
+  namespace: shop
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:5173"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "content-type,x-shop-user"
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts: [shop.tektutor.test]
+    secretName: shop-tls
+  rules:
+  - host: shop.tektutor.test
+    http:
+      paths:
+      - path: /api/cart                            # route 2
+        pathType: Prefix
+        backend: {service: {name: cart, port: {number: 8080}}}
+      - path: /api/orders                          # route 3
+        pathType: Prefix
+        backend: {service: {name: orders, port: {number: 8080}}}
+      - path: /api/stock                           # route 4
+        pathType: Prefix
+        backend: {service: {name: inventory, port: {number: 8080}}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shop-api-v1
+  namespace: shop
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /api/$1/$3
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: shop.tektutor.test
+    http:
+      paths:
+      - path: /api/v1/(cart)(/|$)(.*)              # route 5
+        pathType: ImplementationSpecific
+        backend: {service: {name: cart, port: {number: 8080}}}
+      - path: /api/v1/(orders)(/|$)(.*)            # route 6
+        pathType: ImplementationSpecific
+        backend: {service: {name: orders, port: {number: 8080}}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shop-stock-canary
+  namespace: shop
+  annotations:
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "10"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: shop.tektutor.test
+    http:
+      paths:
+      - path: /api/stock                           # route 4, canary
+        pathType: Prefix
+        backend: {service: {name: inventory-v2, port: {number: 8080}}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shop-cart-sticky
+  namespace: shop
+  annotations:
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/session-cookie-name: shop-affinity
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "3600"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: shop.tektutor.test
+    http:
+      paths:
+      - path: /api/basket                          # route 7
+        pathType: Prefix
+        backend: {service: {name: cart, port: {number: 8080}}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shop-legacy
+  namespace: shop
+  annotations:
+    nginx.ingress.kubernetes.io/permanent-redirect: https://shop.tektutor.test/
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: shop.tektutor.test
+    http:
+      paths:
+      - path: /catalogue                           # route 8
+        pathType: Prefix
+        backend: {service: {name: frontend, port: {number: 8080}}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: admin
+  namespace: shop
+  annotations:
+    nginx.ingress.kubernetes.io/auth-url: >-
+      http://oauth2-proxy.auth.svc.cluster.local/oauth2/auth
+    nginx.ingress.kubernetes.io/auth-signin: >-
+      https://admin.tektutor.test/oauth2/start
+    nginx.ingress.kubernetes.io/whitelist-source-range: >-
+      10.0.0.0/8,192.168.0.0/16
+    nginx.ingress.kubernetes.io/custom-http-errors: "403,404"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts: [admin.tektutor.test]
+    secretName: admin-tls
+  rules:
+  - host: admin.tektutor.test
+    http:
+      paths:
+      - path: /orders                              # route 9
+        pathType: Prefix
+        backend: {service: {name: orders, port: {number: 8080}}}
+      - path: /stock                               # route 10
+        pathType: Prefix
+        backend: {service: {name: inventory, port: {number: 8080}}}
+      - path: /                                    # route 11
+        pathType: Prefix
+        backend: {service: {name: frontend, port: {number: 8080}}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stock-grpc
+  namespace: shop
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: GRPC
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts: [grpc.tektutor.test]
+    secretName: grpc-tls
+  rules:
+  - host: grpc.tektutor.test
+    http:
+      paths:
+      - path: /                                    # route 12
+        pathType: Prefix
+        backend: {service: {name: stock-grpc, port: {number: 9090}}}

@@ -1,0 +1,14 @@
+# Close the sidecar's idle connections to the stand-in server after
+# 500 milliseconds, before the server's keep-alive of one second ends.
+apiVersion: networking.istio.io/v1
+kind: Sidecar
+metadata:
+  name: keepalive-demo
+  namespace: shop
+spec:
+  workloadSelector:
+    labels:
+      app: keepalive-demo
+  inboundConnectionPool:                                       # (1)
+    http:
+      idleTimeout: 500ms

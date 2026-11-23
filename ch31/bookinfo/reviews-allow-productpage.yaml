@@ -1,0 +1,17 @@
+# Let productpage call reviews. Nothing else may call reviews.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: reviews-allow-productpage
+  namespace: bookinfo
+spec:
+  selector:
+    matchLabels:
+      app: reviews
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - tektutor.org/ns/bookinfo/sa/bookinfo-productpage
+        - cluster.local/ns/bookinfo/sa/bookinfo-productpage

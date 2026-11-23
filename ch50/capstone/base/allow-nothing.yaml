@@ -1,0 +1,9 @@
+# R5: deny every request that no ALLOW policy allows (Chapter 31). It is
+# applied after the allow rules (Chapter 48).
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-nothing
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec: {}

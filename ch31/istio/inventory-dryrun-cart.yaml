@@ -1,0 +1,18 @@
+# A planned rule, in dry-run: deny cart's calls to inventory. The proxy
+# evaluates it and records the result, but lets the request through.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: inventory-deny-cart
+  namespace: shop
+  annotations:
+    istio.io/dry-run: "true"                                   # (1)
+spec:
+  selector:
+    matchLabels:
+      app: inventory
+  action: DENY
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/shop/sa/cart"]

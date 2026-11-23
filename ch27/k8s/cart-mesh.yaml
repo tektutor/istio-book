@@ -1,0 +1,17 @@
+# A patch for the cart Deployment from Chapter 16: version 1.1 with the
+# mesh profile, and a five-second wait before SIGTERM.
+#   kubectl patch deployment cart -n shop --patch-file ch27/k8s/cart-mesh.yaml
+spec:
+  template:
+    spec:
+      terminationGracePeriodSeconds: 50                        # (1)
+      containers:
+      - name: cart
+        image: tektutor/cart:1.1
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: mesh                                          # (2)
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 5

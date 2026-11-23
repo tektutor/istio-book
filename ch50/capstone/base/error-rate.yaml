@@ -1,0 +1,30 @@
+# R1: fail the release when more than 1% of the canary's requests fail.
+# reporter is "source" with sidecars and "waypoint" in ambient mode.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: error-rate
+spec:
+  args:
+  - name: service
+  - name: reporter
+    value: source
+  metrics:
+  - name: error-rate
+    initialDelay: 1m
+    interval: 1m
+    failureLimit: 1
+    successCondition: len(result) > 0 && result[0] <= 0.01
+    failureCondition: len(result) > 0 && result[0] > 0.01
+    provider:
+      prometheus:
+        address: http://prometheus.istio-system:9090
+        query: |
+          (sum(rate(istio_requests_total{reporter="{{args.reporter}}",
+              destination_service_name="{{args.service}}",
+              destination_service_namespace="shop",
+              response_code=~"5.."}[1m])) or vector(0))
+          /
+          sum(rate(istio_requests_total{reporter="{{args.reporter}}",
+              destination_service_name="{{args.service}}",
+              destination_service_namespace="shop"}[1m]))

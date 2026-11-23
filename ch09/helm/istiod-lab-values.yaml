@@ -1,0 +1,12 @@
+# Helm values for the istiod chart that match ch08/istio/lab-install.yaml:
+# smaller requests for istiod and for every sidecar.
+resources:                  # (1)
+  requests:
+    cpu: 200m
+    memory: 512Mi
+global:
+  proxy:                    # (2)
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi

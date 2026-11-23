@@ -1,0 +1,18 @@
+# PeerAuthentication STRICT for the mesh. istiod sends ztunnel one static
+# policy that denies every connection without a client identity, which
+# is every plain-text connection, and binds it to each workload.
+addPolicies:
+- name: istio_converted_static_strict
+  namespace: istio-system
+  scope: WorkloadSelector
+  action: Deny
+  dryRun: false
+  rules:
+  - - - notPrincipals: [!Presence []]                         # (1)
+setWorkloads:
+  curl: &strict
+    authorizationPolicies: [istio-system/istio_converted_static_strict]
+  productpage-v1: *strict
+  reviews-v1: *strict
+  reviews-v2: *strict
+  ratings-v1: *strict

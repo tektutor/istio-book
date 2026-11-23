@@ -1,0 +1,5 @@
+# ratings-v1 has a sidecar, injected with the ambient profile: the label
+# networking.istio.io/tunnel=http tells istiod that the sidecar accepts
+# HBONE on port 15008. The pod is not in ambient mode.
+setWorkloads:
+  ratings-v1: { protocol: HBONE, nativeTunnel: true }

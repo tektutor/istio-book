@@ -1,0 +1,12 @@
+# A mistake: a DestinationRule that turns TLS off for calls to inventory.
+# Against a STRICT inventory, every call fails.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  host: inventory.shop.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE                                            # (1)

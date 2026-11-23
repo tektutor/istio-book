@@ -1,0 +1,46 @@
+# Guardrail 3: no PeerAuthentication may weaken mutual TLS, unless the
+# namespace carries a recorded exception label.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: mesh-no-weak-mtls
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: ["security.istio.io"]
+      apiVersions: ["*"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["peerauthentications"]
+  variables:
+  - name: strong                                              # (1)
+    expression: "['STRICT', 'UNSET']"
+  - name: exception
+    expression: >-
+      has(namespaceObject.metadata.labels) &&
+      'mesh.tektutor.org/mtls-exception' in namespaceObject.metadata.labels
+  - name: workloadOk
+    expression: >-
+      !has(object.spec.mtls) || !has(object.spec.mtls.mode) ||
+      object.spec.mtls.mode in variables.strong
+  - name: portsOk                                             # (2)
+    expression: >-
+      !has(object.spec.portLevelMtls) ||
+      object.spec.portLevelMtls.all(port,
+        !has(object.spec.portLevelMtls[port].mode) ||
+        object.spec.portLevelMtls[port].mode in variables.strong)
+  validations:
+  - expression: >-
+      variables.exception || (variables.workloadOk && variables.portsOk)
+    message: >-
+      PERMISSIVE and DISABLE need an approved exception: label the
+      namespace mesh.tektutor.org/mtls-exception with the ticket number.
+    reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: mesh-no-weak-mtls
+spec:
+  policyName: mesh-no-weak-mtls
+  validationActions: ["Deny"]

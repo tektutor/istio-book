@@ -1,0 +1,8 @@
+# The shop namespace for the labs from Chapter 8 on. The label tells
+# istiod's webhook to add a sidecar to every new pod in it.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shop
+  labels:
+    istio-injection: enabled          # (1)

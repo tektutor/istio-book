@@ -1,0 +1,22 @@
+# The policies that Lab 30.3 starts from. The namespace is STRICT, and
+# a forgotten workload policy from an old debugging session makes the
+# reports pods accept plain text again.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: reports
+spec:
+  mtls:
+    mode: STRICT                                         # (1)
+---
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: reports-debug
+  namespace: reports
+spec:
+  selector:                                              # (2)
+    matchLabels: {app: reports}
+  mtls:
+    mode: PERMISSIVE

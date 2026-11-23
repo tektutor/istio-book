@@ -1,0 +1,36 @@
+# Lab 39.2: a Lua filter on the public gateway that stamps every response
+# with the header x-served-by and the gateway's pod name. EnvoyFilter
+# patches the configuration that istiod generated for the gateway.
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: gateway-served-by
+  namespace: ingress
+spec:
+  targetRefs:                                                  # (1)
+  - kind: Gateway
+    group: gateway.networking.k8s.io
+    name: public
+  priority: 10
+  configPatches:
+  - applyTo: HTTP_FILTER                                       # (2)
+    match:
+      context: GATEWAY
+      listener:
+        filterChain:
+          filter:
+            name: envoy.filters.network.http_connection_manager
+            subFilter:
+              name: envoy.filters.http.router                  # (3)
+    patch:
+      operation: INSERT_BEFORE                                 # (4)
+      value:
+        name: tektutor.served-by
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+          default_source_code:
+            inline_string: |                                   # (5)
+              local pod = os.getenv("HOSTNAME") or "unknown"
+              function envoy_on_response(handle)
+                handle:headers():add("x-served-by", pod)
+              end

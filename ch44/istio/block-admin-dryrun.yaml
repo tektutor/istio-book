@@ -1,0 +1,15 @@
+# The same policy as block-admin-bad.yaml in dry-run mode: proxies count
+# the requests that it would deny, and deny none of them.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: block-admin
+  namespace: istio-system
+  annotations:
+    istio.io/dry-run: "true"
+spec:
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        notPaths: ["/admin*"]

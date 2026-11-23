@@ -1,0 +1,32 @@
+# Certificates for the three hosts of the old setup, in the shop
+# namespace where the Ingress objects expect them. They come from the
+# lab CA of Chapter 19.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: shop-tls
+  namespace: shop
+spec:
+  secretName: shop-tls
+  dnsNames: [shop.tektutor.test]
+  issuerRef: {kind: ClusterIssuer, name: lab-ca}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: admin-tls
+  namespace: shop
+spec:
+  secretName: admin-tls
+  dnsNames: [admin.tektutor.test]
+  issuerRef: {kind: ClusterIssuer, name: lab-ca}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: grpc-tls
+  namespace: shop
+spec:
+  secretName: grpc-tls
+  dnsNames: [grpc.tektutor.test]
+  issuerRef: {kind: ClusterIssuer, name: lab-ca}

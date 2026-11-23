@@ -1,0 +1,31 @@
+# The legacy workaround: the container waits for the proxy to start,
+# and when its work is done, it asks istio-agent to stop the sidecar,
+# so the pod and the Job can finish.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: stock-check-quit
+  namespace: shop
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: stock-check-quit
+      annotations:
+        sidecar.istio.io/nativeSidecar: "false"
+        proxy.istio.io/config: |                                 # (1)
+          holdApplicationUntilProxyStarts: true
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: check
+        image: docker.io/curlimages/curl:8.16.0
+        command:
+        - sh
+        - -c
+        - |
+          curl -sS --fail http://inventory:8080/api/stock/SKU-1
+          status=$?
+          curl -sS -X POST http://localhost:15020/quitquitquit   # (2)
+          exit $status

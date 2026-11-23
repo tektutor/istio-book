@@ -1,0 +1,13 @@
+# Expected result: created, with a warning from guardrail 4.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  hosts:
+  - inventory
+  http:
+  - route:
+    - destination:
+        host: inventory

@@ -1,0 +1,4 @@
+# The curl pod is not in ambient mode: its namespace label was missing
+# when it started, so istiod sends it as a plain TCP workload.
+setWorkloads:
+  curl: { protocol: TCP, authorizationPolicies: [] }

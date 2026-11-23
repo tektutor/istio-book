@@ -1,0 +1,62 @@
+# Linkerd: orders and cart may read stock levels from inventory. Four
+# resources: the port, the route, the identities and the rule.
+apiVersion: policy.linkerd.io/v1beta3
+kind: Server
+metadata:
+  name: inventory-http
+  namespace: shop
+spec:
+  podSelector:
+    matchLabels: {app: inventory}
+  port: 8080
+  proxyProtocol: HTTP/1
+---
+apiVersion: policy.linkerd.io/v1beta3
+kind: HTTPRoute
+metadata:
+  name: inventory-stock
+  namespace: shop
+spec:
+  parentRefs:
+  - {group: policy.linkerd.io, kind: Server, name: inventory-http}
+  rules:
+  - matches:
+    - path: {type: PathPrefix, value: /api/stock/}
+      method: GET
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata:
+  name: orders-and-cart
+  namespace: shop
+spec:
+  identityRefs:
+  - {kind: ServiceAccount, name: orders}
+  - {kind: ServiceAccount, name: cart}
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: inventory-stock
+  namespace: shop
+spec:
+  targetRef:
+    {group: policy.linkerd.io, kind: HTTPRoute, name: inventory-stock}
+  requiredAuthenticationRefs:
+  - {group: policy.linkerd.io, kind: MeshTLSAuthentication,
+     name: orders-and-cart}
+---
+# Retries and a timeout for calls to inventory, on the Service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory
+  namespace: shop
+  annotations:
+    retry.linkerd.io/http: 5xx
+    retry.linkerd.io/limit: "2"
+    timeout.linkerd.io/request: 2s
+spec:
+  selector: {app: inventory}
+  ports:
+  - {name: http, port: 8080}

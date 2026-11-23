@@ -1,0 +1,5 @@
+# The label istio.io/use-waypoint=waypont on reviews: no waypoint has that
+# name, so istiod sends reviews without a waypoint and reports
+# WaypointIsNotReady in the Service's status.
+setServices:
+  reviews: {}

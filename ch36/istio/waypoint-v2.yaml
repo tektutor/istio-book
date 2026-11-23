@@ -1,0 +1,16 @@
+# A second waypoint for the bookinfo namespace, for a canary. On its own
+# it receives nothing: the labels on the Service decide how much traffic
+# it gets. Add istio.io/rev to run it on a new istiod revision.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: waypoint-v2
+  namespace: bookinfo
+  labels:
+    istio.io/waypoint-for: service                             # (1)
+spec:
+  gatewayClassName: istio-waypoint
+  listeners:
+  - name: mesh
+    port: 15008
+    protocol: HBONE

@@ -1,0 +1,37 @@
+# The same as cluster1-ambient.yaml for cluster2.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: cluster2
+  namespace: istio-system
+spec:
+  profile: ambient                    # (1)
+  components:
+    pilot:
+      k8s:
+        env:
+        - name: AMBIENT_ENABLE_MULTI_NETWORK       # (2)
+          value: "true"
+        - name: AMBIENT_ENABLE_BAGGAGE             # (3)
+          value: "true"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+  values:
+    ztunnel:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+    global:
+      meshID: mesh1
+      multiCluster:
+        clusterName: cluster2
+      network: network2
+      platform: minikube              # (4)
+      proxy:
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi

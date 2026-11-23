@@ -1,0 +1,44 @@
+# The public gateway as Chapter 19 left it, with a hostname on its HTTP
+# listener: it now accepts plain HTTP for the lab's domain only. The
+# ConfigMap public-gateway-options from Chapter 19 stays as it is.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: public
+  namespace: ingress
+spec:
+  gatewayClassName: istio
+  infrastructure:
+    annotations:
+      proxy.istio.io/config: |
+        connectionSettings:
+          profile: EDGE
+    parametersRef:
+      group: ""
+      kind: ConfigMap
+      name: public-gateway-options
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    hostname: "*.tektutor.test"                                # (1)
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            tektutor.org/ingress: allowed
+  - name: shop-https
+    port: 443
+    protocol: HTTPS
+    hostname: shop.tektutor.test
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: shop-tls
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            tektutor.org/ingress: allowed

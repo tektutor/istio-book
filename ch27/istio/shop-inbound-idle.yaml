@@ -1,0 +1,42 @@
+# Inbound idle timeouts for the shop services, each below the keep-alive
+# timeout of the server in the container:
+#   inventory, orders  uvicorn, keep-alive 5 seconds   -> 4 seconds
+#   cart               Tomcat, keep-alive 60 seconds   -> 50 seconds
+apiVersion: networking.istio.io/v1
+kind: Sidecar
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  workloadSelector:
+    labels:
+      app: inventory
+  inboundConnectionPool:
+    http:
+      idleTimeout: 4s                                          # (1)
+---
+apiVersion: networking.istio.io/v1
+kind: Sidecar
+metadata:
+  name: orders
+  namespace: shop
+spec:
+  workloadSelector:
+    labels:
+      app: orders
+  inboundConnectionPool:
+    http:
+      idleTimeout: 4s
+---
+apiVersion: networking.istio.io/v1
+kind: Sidecar
+metadata:
+  name: cart
+  namespace: shop
+spec:
+  workloadSelector:
+    labels:
+      app: cart
+  inboundConnectionPool:
+    http:
+      idleTimeout: 50s                                         # (2)

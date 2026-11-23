@@ -1,0 +1,21 @@
+# Locality failover for ratings in a mesh with two regions: lab, the
+# primary, and dr, a disaster-recovery region.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: ratings
+  namespace: bookinfo
+spec:
+  host: ratings.bookinfo.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      localityLbSetting:
+        enabled: true
+        failover:                         # (1)
+        - from: lab
+          to: dr
+    outlierDetection:                     # (2)
+      consecutive5xxErrors: 3
+      interval: 5s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 100

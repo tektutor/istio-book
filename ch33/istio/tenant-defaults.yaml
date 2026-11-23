@@ -1,0 +1,16 @@
+# Routing resources and Services are visible only in their own namespace
+# unless they say otherwise, on top of the lab installation:
+#   istioctl install -f ch13/istio/lab-install-ambient.yaml \
+#     -f ch29/istio/trust-domain.yaml -f ch33/istio/hardened.yaml \
+#     -f ch33/istio/tenant-defaults.yaml -y
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  meshConfig:
+    defaultServiceExportTo: ["*"]                              # (1)
+    defaultVirtualServiceExportTo: ["."]                       # (2)
+    defaultDestinationRuleExportTo: ["."]
+  values:
+    pilot:
+      env:
+        PILOT_SCOPE_GATEWAY_TO_NAMESPACE: "true"               # (3)

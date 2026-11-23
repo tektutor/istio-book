@@ -1,0 +1,23 @@
+# Who may leave through the egress gateway. Only the curl service
+# account of the shop namespace may call httpbin.org, and only with GET.
+# The gateway knows the caller from the Istio mutual TLS certificate.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: httpbin-callers
+  namespace: egress
+spec:
+  targetRefs:
+  - kind: Gateway
+    group: gateway.networking.k8s.io
+    name: egress-gateway                               # (1)
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/shop/sa/curl                # (2)
+    to:
+    - operation:
+        hosts: ["httpbin.org"]
+        methods: ["GET"]

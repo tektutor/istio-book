@@ -1,0 +1,14 @@
+# A second control plane for team B. It runs in its own namespace, and
+# it only sees namespaces labelled mesh=team-b.
+revision: team-b                          # (1)
+global:
+  istioNamespace: istio-team-b            # (2)
+meshConfig:
+  rootNamespace: istio-team-b
+  discoverySelectors:                     # (3)
+  - matchLabels:
+      mesh: team-b
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi

@@ -1,0 +1,17 @@
+# The headless Service in front of a three-broker Kafka StatefulSet.
+# Chapter 22 covers Kafka in the mesh; this file shows only the addressing.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: events
+spec:
+  clusterIP: None                     # (1)
+  publishNotReadyAddresses: true      # (2)
+  selector:
+    app: kafka
+  ports:
+  - name: tcp-client                  # (3)
+    port: 9092
+  - name: tcp-controller
+    port: 9093

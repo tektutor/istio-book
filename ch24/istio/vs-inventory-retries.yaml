@@ -1,0 +1,20 @@
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  hosts:
+  - inventory
+  http:
+  - route:
+    - destination:
+        host: inventory
+        port:
+          number: 8080
+    timeout: 10s                   # (1)
+    retries:
+      attempts: 3                  # (2)
+      perTryTimeout: 2s            # (3)
+      retryOn: >-                  # (4)
+        connect-failure,refused-stream,unavailable,cancelled,reset,503

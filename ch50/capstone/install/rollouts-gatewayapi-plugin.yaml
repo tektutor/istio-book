@@ -1,0 +1,39 @@
+# Ambient mode only: Argo Rollouts loads the Gateway API plugin from this
+# ConfigMap when it starts, and the plugin may change HTTPRoutes. Apply it
+# after ch48/k8s/install-rollouts.sh, then restart the controller.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argo-rollouts-config
+  namespace: argo-rollouts
+data:
+  trafficRouterPlugins: |-
+    - name: "argoproj-labs/gatewayAPI"
+      location: "https://github.com/argoproj-labs/\
+        rollouts-plugin-trafficrouter-gatewayapi/releases/download/\
+        v0.17.0/gatewayapi-plugin-linux-amd64"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argo-rollouts-gateway-api-plugin
+rules:
+- apiGroups: ["gateway.networking.k8s.io"]
+  resources: ["httproutes", "grpcroutes"]
+  verbs: ["get", "list", "update", "patch"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-rollouts-gateway-api-plugin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argo-rollouts-gateway-api-plugin
+subjects:
+- kind: ServiceAccount
+  name: argo-rollouts
+  namespace: argo-rollouts

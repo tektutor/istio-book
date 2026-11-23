@@ -1,0 +1,19 @@
+# TLS from the gateway to a backend that only accepts TLS. The gateway
+# checks the backend's certificate against the CA in the ConfigMap.
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: reports-tls
+  namespace: shop
+spec:
+  targetRefs:                                      # (1)
+  - group: ""
+    kind: Service
+    name: reports
+    sectionName: https
+  validation:
+    caCertificateRefs:                             # (2)
+    - group: ""
+      kind: ConfigMap
+      name: reports-ca
+    hostname: reports.shop.svc.cluster.local       # (3)

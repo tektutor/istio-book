@@ -1,0 +1,10 @@
+# Istio 1.0 to 1.5: RBAC v1alpha1, removed in Istio 1.6.
+apiVersion: rbac.istio.io/v1alpha1
+kind: ServiceRole
+metadata:
+  name: httpbin-reader
+  namespace: demo
+spec:
+  rules:
+  - services: ["httpbin.demo.svc.cluster.local"]
+    methods: ["GET"]

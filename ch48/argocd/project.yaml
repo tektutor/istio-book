@@ -1,0 +1,23 @@
+# The Argo CD project for mesh configuration. It limits what the
+# repository may change: Istio resources in the shop namespace, nothing
+# else. A pull request that adds a Deployment or a ClusterRole fails.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: mesh-config
+  namespace: argocd
+spec:
+  description: Istio configuration of TekTutor Shop
+  sourceRepos:
+  - https://github.com/YOUR-ORG/shop-mesh-config.git            # (1)
+  destinations:
+  - server: https://kubernetes.default.svc
+    namespace: shop
+  clusterResourceWhitelist: []                                   # (2)
+  namespaceResourceWhitelist:
+  - group: networking.istio.io
+    kind: "*"
+  - group: security.istio.io
+    kind: "*"
+  - group: telemetry.istio.io
+    kind: "*"

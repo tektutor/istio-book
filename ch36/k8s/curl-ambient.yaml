@@ -1,0 +1,42 @@
+# A curl pod in the ambient namespace bookinfo. Sidecars do not send
+# traffic to waypoints, so tests of a waypoint need an ambient client.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: curl
+  namespace: bookinfo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: curl
+  namespace: bookinfo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: curl
+  template:
+    metadata:
+      labels:
+        app: curl
+        version: v1
+    spec:
+      serviceAccountName: curl
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100        # the image's user curl_user
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: curl
+        image: docker.io/curlimages/curl:8.16.0
+        command: ["sleep", "infinity"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi

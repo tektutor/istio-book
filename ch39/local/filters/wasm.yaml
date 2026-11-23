@@ -1,0 +1,14 @@
+          - name: envoy.filters.http.wasm
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+                wasm.v3.Wasm"
+              config:
+                name: tenant-check
+                configuration:
+                  "@type": type.googleapis.com/google.protobuf.StringValue
+                  value: '{"tenants": ["acme", "globex"]}'
+                vm_config:
+                  runtime: envoy.wasm.runtime.v8
+                  code:
+                    local:
+                      filename: MODULE

@@ -1,0 +1,27 @@
+# Two extension providers: OpenTelemetry tracing to Jaeger, and access
+# logs over OpenTelemetry to a collector that sends them to Loki.
+# Install on top of the lab installation and the earlier overlays:
+#   istioctl install -f ch13/istio/lab-install-ambient.yaml \
+#     -f ch29/istio/trust-domain.yaml -f ch33/istio/hardened.yaml \
+#     -f ch35/istio/observability-providers.yaml -y
+# A later file replaces the list of an earlier one; keep every provider
+# you still need in this file.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  meshConfig:
+    extensionProviders:
+    - name: otel-tracing                                       # (1)
+      opentelemetry:
+        service: jaeger-collector.istio-system.svc.cluster.local
+        port: 4317
+    - name: otel-als                                           # (2)
+      envoyOtelAls:
+        service: otel-collector.istio-system.svc.cluster.local
+        port: 4317
+        logFormat:
+          labels:                                              # (3)
+            pod: "%ENVIRONMENT(POD_NAME)%"
+            namespace: "%ENVIRONMENT(POD_NAMESPACE)%"
+            workload: "%ENVIRONMENT(ISTIO_META_WORKLOAD_NAME)%"
+            response_flags: "%RESPONSE_FLAGS%"

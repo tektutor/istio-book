@@ -1,0 +1,107 @@
+# Envoy's reference rate limit service and the Redis that holds its
+# counters, in their own namespace. The image is the one that Istio
+# 1.31 uses in its own sample.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ratelimit
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: ratelimit
+spec:
+  selector:
+    app: redis
+  ports:
+  - name: tcp-redis
+    port: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: ratelimit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: docker.io/library/redis:8.8.3-alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ratelimit
+  namespace: ratelimit
+spec:
+  selector:
+    app: ratelimit
+  ports:
+  - name: grpc                            # (1)
+    port: 8081
+  - name: http-debug
+    port: 6070
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ratelimit
+  namespace: ratelimit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ratelimit
+  template:
+    metadata:
+      labels:
+        app: ratelimit
+    spec:
+      containers:
+      - name: ratelimit
+        image: docker.io/envoyproxy/ratelimit:30a4ce1a
+        command: ["/bin/ratelimit"]
+        env:
+        - name: REDIS_SOCKET_TYPE
+          value: tcp
+        - name: REDIS_URL
+          value: redis:6379               # (2)
+        - name: USE_STATSD
+          value: "false"
+        - name: RUNTIME_ROOT              # (3)
+          value: /data
+        - name: RUNTIME_SUBDIRECTORY
+          value: ratelimit
+        - name: RUNTIME_WATCH_ROOT
+          value: "false"
+        - name: RUNTIME_IGNOREDOTFILES
+          value: "true"
+        ports:
+        - containerPort: 8081
+        - containerPort: 6070
+        volumeMounts:
+        - name: config
+          mountPath: /data/ratelimit/config
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+      volumes:
+      - name: config
+        configMap:
+          name: ratelimit-config

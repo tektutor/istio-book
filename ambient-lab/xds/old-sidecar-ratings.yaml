@@ -1,0 +1,4 @@
+# ratings-v1 has a sidecar that was injected before ambient mode was
+# installed, without the tunnel label: ztunnel sends it plain TCP.
+setWorkloads:
+  ratings-v1: { protocol: TCP }

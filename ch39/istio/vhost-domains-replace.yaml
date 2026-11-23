@@ -1,0 +1,25 @@
+# The same patch with MERGE_AND_REPLACE_LIST, new in Istio 1.31: the
+# domains of the patch replace the list that istiod generated.
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: bookinfo-domains
+  namespace: ingress
+spec:
+  targetRefs:
+  - kind: Gateway
+    group: gateway.networking.k8s.io
+    name: public
+  configPatches:
+  - applyTo: VIRTUAL_HOST
+    match:
+      context: GATEWAY
+      routeConfiguration:
+        portNumber: 80
+        vhost:
+          name: bookinfo.tektutor.test:80                      # (1)
+    patch:
+      operation: MERGE_AND_REPLACE_LIST                        # (2)
+      value:
+        domains:
+        - books.tektutor.test

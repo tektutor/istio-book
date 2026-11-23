@@ -1,0 +1,13 @@
+# ztunnel for OpenShift Service Mesh. It runs as a DaemonSet in the
+# ztunnel namespace and follows the version of the Istio resource.
+# Label that namespace istio-discovery=enabled before you apply this.
+apiVersion: sailoperator.io/v1
+kind: ZTunnel
+metadata:
+  name: default
+spec:
+  namespace: ztunnel                        # (1)
+  version: v1.30.5                          # (3)
+  targetRef:                                # (2)
+    kind: Istio
+    name: default

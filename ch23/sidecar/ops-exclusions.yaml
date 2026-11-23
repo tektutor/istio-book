@@ -1,0 +1,15 @@
+# Istio 1.31: start from everything and take parts away. The ops tools
+# call services in almost every namespace, but not the load-test
+# namespace, which holds thousands of short-lived Services, and not one
+# large legacy Service in the shop.
+apiVersion: networking.istio.io/v1
+kind: Sidecar
+metadata:
+  name: default
+  namespace: ops
+spec:
+  egress:
+  - hosts:
+    - "*/*"                                       # (1)
+    - "~load-test/*"                              # (2)
+    - "~shop/feed.shop.svc.cluster.local"         # (3)

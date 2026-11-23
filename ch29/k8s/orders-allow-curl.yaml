@@ -1,0 +1,18 @@
+# Allow only the curl and Fortio pods to call orders. Every other caller,
+# including the gateway, gets 403 while this policy exists.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: orders-allow-curl
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: orders
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:                                            # (1)
+        - cluster.local/ns/shop/sa/curl
+        - cluster.local/ns/shop/sa/default

@@ -1,0 +1,8 @@
+# OPA with the Envoy plugin: a gRPC ext_authz server that answers each
+# check with the rule data.istio.authz.allow.
+plugins:
+  envoy_ext_authz_grpc:
+    addr: 127.0.0.1:19191                                      # (1)
+    path: istio/authz/allow                                    # (2)
+decision_logs:
+  console: true                                                # (3)

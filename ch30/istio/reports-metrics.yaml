@@ -1,0 +1,20 @@
+# A port-level exception with a record: the reports pods accept only
+# mutual TLS, except on the metrics port, which a monitoring agent
+# outside the mesh scrapes in plain text.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: reports-metrics
+  namespace: reports
+  annotations:                                           # (1)
+    tektutor.org/exception-owner: "observability team"
+    tektutor.org/exception-reason: "agent outside the mesh scrapes 9100"
+    tektutor.org/exception-expires: "2027-06-30"
+spec:
+  selector:                                              # (2)
+    matchLabels: {app: reports}
+  mtls:
+    mode: STRICT                                         # (3)
+  portLevelMtls:
+    9100:                                                # (4)
+      mode: PERMISSIVE

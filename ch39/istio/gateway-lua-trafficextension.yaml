@@ -1,0 +1,19 @@
+# The same Lua code as a TrafficExtension: no filter names, no patch.
+# istiod places it in the filter chain, after the phase it names.
+apiVersion: extensions.istio.io/v1alpha1
+kind: TrafficExtension
+metadata:
+  name: gateway-served-by
+  namespace: ingress
+spec:
+  targetRefs:
+  - kind: Gateway
+    group: gateway.networking.k8s.io
+    name: public
+  phase: STATS                                                 # (1)
+  lua:
+    inlineCode: |                                              # (2)
+      local pod = os.getenv("HOSTNAME") or "unknown"
+      function envoy_on_response(handle)
+        handle:headers():add("x-served-by", pod)
+      end

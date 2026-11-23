@@ -1,0 +1,9 @@
+# What istio-agent hands to Envoy when the pull fails and failStrategy is
+# FAIL_CLOSE: an RBAC filter with an empty rule set, which denies all.
+resources:
+- "@type": type.googleapis.com/envoy.config.core.v3.TypedExtensionConfig
+  name: tenant-check
+  typed_config:
+    "@type": type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+    rules: {}
+    rules_stat_prefix: wasm-default-deny

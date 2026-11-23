@@ -1,0 +1,25 @@
+# Keeps the Istio resources of the shop namespace equal to the main
+# branch of the mesh configuration repository.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shop-mesh
+  namespace: argocd
+spec:
+  project: mesh-config
+  source:
+    repoURL: https://github.com/YOUR-ORG/shop-mesh-config.git
+    targetRevision: main
+    path: shop
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: shop
+  syncPolicy:
+    automated:
+      prune: true                                                # (1)
+      selfHeal: true                                             # (2)
+    syncOptions:
+    - ServerSideApply=true                                       # (3)
+    retry:
+      limit: 3
+      backoff: {duration: 10s, factor: 2, maxDuration: 1m}

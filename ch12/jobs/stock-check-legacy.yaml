@@ -1,0 +1,22 @@
+# The same Job with the sidecar as an ordinary container. The Job never
+# completes, because the sidecar keeps running after curl ends.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: stock-check-legacy
+  namespace: shop
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: stock-check-legacy
+      annotations:
+        sidecar.istio.io/nativeSidecar: "false"   # (1)
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: check
+        image: docker.io/curlimages/curl:8.16.0
+        command: ["curl", "-sS", "--fail",
+                  "http://inventory:8080/api/stock/SKU-1"]

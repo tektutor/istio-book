@@ -1,0 +1,26 @@
+# The same release with Flagger instead of Argo Rollouts. Flagger keeps
+# the Deployment, creates inventory-primary, inventory-canary and the
+# VirtualService itself, and moves 10% of the traffic per minute.
+apiVersion: flagger.app/v1beta1
+kind: Canary
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: inventory
+  service:
+    port: 8080
+    appProtocol: http
+  analysis:
+    interval: 1m
+    threshold: 2                                               # (1)
+    stepWeight: 10
+    maxWeight: 50
+    metrics:
+    - name: request-success-rate                               # (2)
+      thresholdRange:
+        min: 99
+      interval: 1m

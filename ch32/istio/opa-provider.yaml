@@ -1,0 +1,15 @@
+# Register OPA as an extension provider, on top of the lab installation
+# and the trust domain from Chapter 29:
+#   istioctl install -f ch13/istio/lab-install-ambient.yaml \
+#     -f ch29/istio/trust-domain.yaml -f ch32/istio/opa-provider.yaml -y
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  meshConfig:
+    extensionProviders:
+    - name: opa                                                # (1)
+      envoyExtAuthzGrpc:
+        service: opa.opa.svc.cluster.local
+        port: 9191
+        timeout: 0.5s                                          # (2)
+        failOpen: false                                        # (3)

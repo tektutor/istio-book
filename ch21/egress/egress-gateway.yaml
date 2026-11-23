@@ -1,0 +1,42 @@
+# The egress gateway. Istio deploys it as egress-gateway-istio in the
+# egress namespace. Its listener accepts Istio mutual TLS from the
+# sidecars, so the hop from the application to the gateway is encrypted
+# and the gateway knows each caller's identity.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: egress-gateway
+  namespace: egress
+  annotations:
+    networking.istio.io/service-type: ClusterIP       # (1)
+spec:
+  gatewayClassName: istio
+  listeners:
+  - name: httpbin
+    hostname: httpbin.org
+    port: 80
+    protocol: HTTPS                                    # (2)
+    tls:
+      mode: Terminate
+      options:
+        gateway.istio.io/tls-terminate-mode: ISTIO_MUTUAL
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+# The sidecars' side of that hop: Istio mutual TLS to the gateway, with
+# the external host name as SNI so that the gateway picks the listener.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: egress-gateway
+  namespace: egress
+spec:
+  host: egress-gateway-istio.egress.svc.cluster.local
+  trafficPolicy:
+    portLevelSettings:
+    - port:
+        number: 80
+      tls:
+        mode: ISTIO_MUTUAL
+        sni: httpbin.org                               # (3)

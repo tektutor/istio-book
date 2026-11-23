@@ -1,0 +1,9 @@
+# ch10/mesh/istiocni.yaml with the ambient profile.
+apiVersion: sailoperator.io/v1
+kind: IstioCNI
+metadata:
+  name: default
+spec:
+  namespace: istio-cni
+  version: v1.30.5
+  profile: ambient

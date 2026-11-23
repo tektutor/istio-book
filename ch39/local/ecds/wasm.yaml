@@ -1,0 +1,16 @@
+# What istio-agent hands to Envoy after it pulled the module: the Wasm
+# filter, with the module as a local file. CONFIG is the pluginConfig.
+resources:
+- "@type": type.googleapis.com/envoy.config.core.v3.TypedExtensionConfig
+  name: tenant-check
+  typed_config:
+    "@type": type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+    config:
+      name: ingress.tenant-check
+      configuration:
+        "@type": type.googleapis.com/google.protobuf.StringValue
+        value: 'CONFIG'
+      failure_policy: FAIL_CLOSED
+      vm_config:
+        runtime: envoy.wasm.runtime.v8
+        code: {local: {filename: MODULE}}

@@ -1,0 +1,29 @@
+# ch08/istio/lab-install.yaml with the Istio CNI node agent turned on.
+# The CNI agent sets up traffic capture, so pods need no istio-init
+# container with extra privileges.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: lab
+  namespace: istio-system
+spec:
+  profile: default
+  components:
+    cni:
+      enabled: true
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+    ingressGateways:
+    - name: istio-ingressgateway
+      enabled: false
+  values:
+    global:
+      proxy:
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi

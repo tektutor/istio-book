@@ -1,0 +1,65 @@
+# R1: inventory as an Argo Rollout, from Chapter 48. Each overlay adds
+# the traffic routing of its data plane mode.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: inventory
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: inventory
+  template:
+    metadata:
+      labels:
+        app: inventory
+        version: v1
+    spec:
+      serviceAccountName: inventory
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: inventory
+        image: tektutor/inventory:1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            memory: 64Mi
+  strategy:
+    canary:
+      stableService: inventory-stable
+      canaryService: inventory-canary
+      analysis:
+        templates:
+        - templateName: error-rate
+        startingStep: 1
+        args:
+        - name: service
+          value: inventory-canary
+      steps:
+      - setWeight: 10
+      - pause: {duration: 3m}
+      - setWeight: 50
+      - pause: {duration: 3m}

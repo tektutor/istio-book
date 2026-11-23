@@ -1,0 +1,24 @@
+# A mesh route for the stock service: retry GetStock twice when a pod
+# answers UNAVAILABLE, and give up after 2 seconds in total.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: stock-grpc
+  namespace: shop
+spec:
+  hosts:
+  - stock-grpc.shop.svc.cluster.local
+  http:
+  - match:
+    - uri:
+        exact: /tektutor.stock.v1.StockService/GetStock   # (1)
+    timeout: 2s
+    retries:
+      attempts: 2
+      retryOn: unavailable,cancelled,resource-exhausted   # (2)
+    route:
+    - destination:
+        host: stock-grpc.shop.svc.cluster.local
+  - route:                                                # (3)
+    - destination:
+        host: stock-grpc.shop.svc.cluster.local

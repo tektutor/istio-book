@@ -1,0 +1,18 @@
+# Validate tokens from the Keycloak realm "shop" on requests to orders,
+# and pass the user name on to the application.
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: orders-jwt
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: orders
+  jwtRules:
+  - issuer: http://keycloak.keycloak.svc.cluster.local:8080/realms/shop  # (1)
+    jwksUri: "http://keycloak.keycloak.svc.cluster.local:8080/realms/shop/\
+      protocol/openid-connect/certs"
+    outputClaimToHeaders:                                      # (2)
+    - header: x-shop-user
+      claim: preferred_username

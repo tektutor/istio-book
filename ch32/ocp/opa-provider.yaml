@@ -1,0 +1,13 @@
+# ch32/istio/opa-provider.yaml for OpenShift Service Mesh 3.4: a merge patch
+# for the Istio resource from Chapter 10. Apply it with
+#   oc patch istio default --type merge --patch-file ch32/ocp/opa-provider.yaml
+spec:
+  values:
+    meshConfig:
+      extensionProviders:
+      - name: opa
+        envoyExtAuthzGrpc:
+          service: opa.opa.svc.cluster.local
+          port: 9191
+          timeout: 0.5s
+          failOpen: false

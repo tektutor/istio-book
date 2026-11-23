@@ -1,0 +1,44 @@
+# Checks every pull request that changes the mesh configuration. Make
+# both jobs required checks of the main branch, so that a pull request
+# cannot be merged until they pass.
+name: mesh-config
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:                                                     # (1)
+  group: mesh-config-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v7
+    - run: ci/install-tools.sh
+    - name: Test the team rules
+      run: conftest verify -p policy                             # (2)
+    - name: Static checks
+      run: ci/check.sh shop
+
+  cluster:
+    needs: static                                                # (3)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v7
+    - run: ci/install-tools.sh
+    - name: Create a test cluster with Istio and the shop
+      run: ci/create-test-cluster.sh
+    - name: Apply the change
+      run: kubectl apply -f shop/
+    - name: Analyze the change in the cluster
+      run: istioctl analyze -n shop --failure-threshold Warning  # (4)
+    - name: Regression tests
+      run: python3 tests/mesh_tests.py tests/cases.txt
+    - name: Show proxy logs when a step failed
+      if: failure()                                              # (5)
+      run: |
+        kubectl logs -n shop -l app=inventory -c istio-proxy --tail=50
+        kubectl logs -n shop -l app=orders -c istio-proxy --tail=50

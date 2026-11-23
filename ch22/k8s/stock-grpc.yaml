@@ -1,0 +1,68 @@
+# The stock service with three replicas, and its Service. The port name
+# and appProtocol both say grpc, so the proxies speak HTTP/2 to it.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: stock
+  namespace: shop
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stock
+  namespace: shop
+spec:
+  replicas: 3                                       # (1)
+  selector:
+    matchLabels:
+      app: stock
+  template:
+    metadata:
+      labels:
+        app: stock
+        version: v1
+    spec:
+      serviceAccountName: stock
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: stock
+        image: tektutor/stock:1.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        ports:
+        - containerPort: 9090
+        readinessProbe:
+          grpc:                                     # (2)
+            port: 9090
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 20m
+            memory: 48Mi
+          limits:
+            memory: 96Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stock-grpc
+  namespace: shop
+spec:
+  selector:
+    app: stock
+  ports:
+  - name: grpc                                      # (3)
+    appProtocol: grpc
+    port: 9090
+    targetPort: 9090

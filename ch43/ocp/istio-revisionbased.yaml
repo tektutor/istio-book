@@ -1,0 +1,25 @@
+# ch13/ocp/istio-ambient.yaml for the upgrade lab: RevisionBased instead of
+# InPlace, one patch release back, and an old revision kept for an hour
+# after nothing uses it, so that you can still roll back.
+apiVersion: sailoperator.io/v1
+kind: Istio
+metadata:
+  name: default
+spec:
+  namespace: istio-system
+  version: v1.30.4                          # (1)
+  profile: ambient
+  updateStrategy:
+    type: RevisionBased
+    inactiveRevisionDeletionGracePeriodSeconds: 3600   # (2)
+  values:
+    meshConfig:
+      discoverySelectors:
+      - matchLabels:
+          istio-discovery: enabled
+    pilot:
+      trustedZtunnelNamespace: ztunnel
+      resources:
+        requests:
+          cpu: 200m
+          memory: 512Mi

@@ -1,0 +1,23 @@
+# The mesh-wide Telemetry resource for Part VIII. It replaces mesh-default
+# from Chapter 8 (and from Chapter 10 on OpenShift) and keeps what they
+# set: access logs for every proxy, and Prometheus metrics.
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: mesh-default
+  namespace: istio-system
+spec:
+  tracing:
+  - providers:
+    - name: otel-tracing
+    randomSamplingPercentage: 100                              # (1)
+  accessLogging:
+  - providers:                                                 # (2)
+    - name: envoy
+  - providers:
+    - name: otel-als
+    filter:
+      expression: "response.code >= 400 || !has(response.code)"  # (3)
+  metrics:
+  - providers:
+    - name: prometheus

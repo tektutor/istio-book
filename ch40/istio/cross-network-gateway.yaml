@@ -1,0 +1,20 @@
+# Opens port 15443 of the east-west gateway for the Bookinfo Services
+# only. Istio's sample uses the host "*.local", which also exposes
+# istiod and the Kubernetes API server to the other network.
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: cross-network-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: eastwestgateway
+  servers:
+  - port:
+      number: 15443
+      name: tls
+      protocol: TLS
+    tls:
+      mode: AUTO_PASSTHROUGH                      # (1)
+    hosts:
+    - "*.bookinfo.svc.cluster.local"              # (2)

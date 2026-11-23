@@ -1,0 +1,10 @@
+# Accept only mutual TLS everywhere in the mesh. A PeerAuthentication
+# without a selector in the root namespace applies to every namespace.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: istio-system                                      # (1)
+spec:
+  mtls:
+    mode: STRICT

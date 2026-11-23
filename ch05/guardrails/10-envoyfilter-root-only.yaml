@@ -1,0 +1,27 @@
+# Guardrail 1: EnvoyFilter resources only in the mesh root namespace.
+# An EnvoyFilter patches Envoy directly, so only the platform team
+# may create one, and only where it can review it.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: mesh-envoyfilter-root-only
+spec:
+  failurePolicy: Fail                                  # (1)
+  matchConstraints:
+    resourceRules:
+    - apiGroups: ["networking.istio.io"]
+      apiVersions: ["*"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["envoyfilters"]
+  validations:
+  - expression: "request.namespace == 'istio-system'"  # (2)
+    message: "EnvoyFilter is allowed only in istio-system."
+    reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: mesh-envoyfilter-root-only
+spec:
+  policyName: mesh-envoyfilter-root-only               # (3)
+  validationActions: ["Deny"]

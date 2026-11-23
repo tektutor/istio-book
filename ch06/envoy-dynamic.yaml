@@ -1,0 +1,21 @@
+# Lab 6.2: Envoy gets its listeners and clusters from files and reloads
+# them when a file in /etc/envoy/xds is replaced.
+node:
+  id: lab-proxy                                     # (1)
+  cluster: shop
+
+admin:
+  address:
+    socket_address: { address: 0.0.0.0, port_value: 9901 }
+
+dynamic_resources:
+  cds_config:                                       # (2)
+    resource_api_version: V3
+    path_config_source:
+      path: /etc/envoy/xds/cds.yaml
+      watched_directory: { path: /etc/envoy/xds }   # (3)
+  lds_config:
+    resource_api_version: V3
+    path_config_source:
+      path: /etc/envoy/xds/lds.yaml
+      watched_directory: { path: /etc/envoy/xds }

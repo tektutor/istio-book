@@ -1,0 +1,8 @@
+# Istio 1.0 to 1.5: mesh-wide mutual TLS with MeshPolicy, removed in 1.6.
+apiVersion: authentication.istio.io/v1alpha1
+kind: MeshPolicy
+metadata:
+  name: default
+spec:
+  peers:
+  - mtls: {}

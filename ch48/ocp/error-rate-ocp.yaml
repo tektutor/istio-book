@@ -1,0 +1,36 @@
+# The analysis of ../rollouts/error-rate.yaml for OpenShift: the same
+# query, sent to the Thanos querier with the token of rollouts-metrics.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: error-rate
+  namespace: shop
+spec:
+  args:
+  - name: service
+  - name: token
+    valueFrom:
+      secretKeyRef: {name: rollouts-metrics-token, key: token}  # (1)
+  metrics:
+  - name: error-rate
+    initialDelay: 1m
+    interval: 1m
+    failureLimit: 1
+    successCondition: len(result) > 0 && result[0] <= 0.01
+    failureCondition: len(result) > 0 && result[0] > 0.01
+    provider:
+      prometheus:
+        address: https://thanos-querier.openshift-monitoring.svc:9091
+        insecure: true                                          # (2)
+        headers:
+        - key: Authorization
+          value: "Bearer {{args.token}}"
+        query: |
+          (sum(rate(istio_requests_total{reporter="source",
+              destination_service_name="{{args.service}}",
+              destination_service_namespace="shop",
+              response_code=~"5.."}[1m])) or vector(0))
+          /
+          sum(rate(istio_requests_total{reporter="source",
+              destination_service_name="{{args.service}}",
+              destination_service_namespace="shop"}[1m]))

@@ -1,0 +1,36 @@
+# Routing for the shop gateway: accept HTTP for any host on port 80, and
+# send /api/orders/ to the orders service. Chapter 16 explains both
+# resources in depth.
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: shop
+spec:
+  selector:
+    istio: shop-gateway                     # (1)
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"                                   # (2)
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: shop
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - shop                                    # (3)
+  http:
+  - match:
+    - uri:
+        prefix: /api/orders/
+    route:
+    - destination:
+        host: orders                        # (4)
+        port:
+          number: 8080

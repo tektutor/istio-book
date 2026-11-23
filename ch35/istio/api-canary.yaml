@@ -1,0 +1,35 @@
+# The release under test in Lab 35.3: 20 percent of the calls to api go
+# to the canary v2, every call has one second in total, and a failed or
+# slow try is repeated up to two times.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: api
+  namespace: lab
+spec:
+  host: api.lab.svc.cluster.local
+  subsets:                                               # (1)
+  - name: v1
+    labels: {version: v1}
+  - name: v2
+    labels: {version: v2}
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: api
+  namespace: lab
+spec:
+  hosts:
+  - api.lab.svc.cluster.local
+  http:
+  - route:
+    - destination: {host: api.lab.svc.cluster.local, subset: v1}
+      weight: 80
+    - destination: {host: api.lab.svc.cluster.local, subset: v2}
+      weight: 20                                         # (2)
+    timeout: 1s                                          # (3)
+    retries:
+      attempts: 2                                        # (4)
+      perTryTimeout: 400ms                               # (5)
+      retryOn: 5xx,reset,connect-failure                 # (6)

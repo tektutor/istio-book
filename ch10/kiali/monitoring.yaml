@@ -1,0 +1,31 @@
+# Metrics for OpenShift user workload monitoring: turn on Istio's
+# Prometheus metrics and scrape istiod. podmonitor.yaml scrapes the
+# sidecars. istiod uses only one mesh-wide Telemetry resource, so this
+# file replaces mesh-default from Chapter 8 and keeps its access logs.
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: mesh-default                          # (1)
+  namespace: istio-system
+spec:
+  accessLogging:
+  - providers:
+    - name: envoy
+  metrics:
+  - providers:
+    - name: prometheus
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: istiod-monitor
+  namespace: istio-system
+spec:
+  targetLabels:
+  - app
+  selector:
+    matchLabels:
+      istio: pilot
+  endpoints:
+  - port: http-monitoring
+    interval: 30s

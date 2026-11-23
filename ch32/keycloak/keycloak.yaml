@@ -1,0 +1,96 @@
+# Keycloak in development mode, with the realm "shop" imported at start:
+# two users, two roles, and a client for command-line logins. Lab only:
+# development mode keeps its data in a file database inside the container,
+# lost when the pod restarts, and the realm uses fixed passwords.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: keycloak
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: realm-shop
+  namespace: keycloak
+data:
+  realm-shop.json: |                                           # (1)
+    {
+      "realm": "shop",
+      "enabled": true,
+      "roles": { "realm": [ { "name": "admin" }, { "name": "user" } ] },
+      "clients": [ {
+        "clientId": "shop-cli",
+        "publicClient": true,
+        "directAccessGrantsEnabled": true,
+        "standardFlowEnabled": false
+      } ],
+      "users": [
+        { "username": "kayal", "enabled": true, "emailVerified": true,
+          "firstName": "Kayal", "lastName": "Rao",
+          "email": "kayal@tektutor.test",
+          "credentials": [ { "type": "password", "value": "kayal-lab-pass" } ],
+          "realmRoles": [ "admin", "user" ] },
+        { "username": "prabhu", "enabled": true, "emailVerified": true,
+          "firstName": "Prabhu", "lastName": "Kumar",
+          "email": "prabhu@tektutor.test",
+          "credentials": [ { "type": "password", "value": "prabhu-lab-pass" } ],
+          "realmRoles": [ "user" ] }
+      ]
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:26.8.1
+        args: ["start-dev", "--import-realm", "--health-enabled=true"]  # (2)
+        env:
+        - name: KC_BOOTSTRAP_ADMIN_USERNAME
+          value: admin
+        - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+          value: admin-lab-pass
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 9000                                         # (3)
+        volumeMounts:
+        - name: realm
+          mountPath: /opt/keycloak/data/import
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            memory: 1Gi
+      volumes:
+      - name: realm
+        configMap:
+          name: realm-shop
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  selector:
+    app: keycloak
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080

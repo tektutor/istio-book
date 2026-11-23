@@ -1,0 +1,15 @@
+# The routes of the Service reviews at the waypoint when no HTTPRoute
+# targets it: everything goes to the Service, with Istio's inbound retry.
+resources:
+- "@type": type.googleapis.com/envoy.config.route.v3.RouteConfiguration
+  name: "inbound-vip|9080|http|reviews.bookinfo.svc.cluster.local"
+  virtual_hosts:
+  - name: "inbound|http|9080"
+    domains: ["*"]
+    routes:
+    - name: default
+      match: { prefix: / }
+      route:
+        cluster: "inbound-vip|9080|http|reviews.bookinfo.svc.cluster.local"
+        timeout: 0s
+        retry_policy: { retry_on: reset-before-request, num_retries: 2 }

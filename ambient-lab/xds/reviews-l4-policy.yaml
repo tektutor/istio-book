@@ -1,0 +1,15 @@
+# An AuthorizationPolicy with a selector, app: reviews, that allows only
+# productpage's identity. Without a targetRef, ztunnel enforces it on
+# the reviews pods, at layer 4.
+addPolicies:
+- name: reviews-l4
+  namespace: bookinfo
+  scope: WorkloadSelector
+  action: Allow
+  dryRun: false
+  rules:
+  - - - principals:
+        - !Exact tektutor.org/ns/bookinfo/sa/bookinfo-productpage
+setWorkloads:
+  reviews-v1: { authorizationPolicies: [bookinfo/reviews-l4] }
+  reviews-v2: { authorizationPolicies: [bookinfo/reviews-l4] }

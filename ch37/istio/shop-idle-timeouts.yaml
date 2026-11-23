@@ -1,0 +1,41 @@
+# Idle timeouts for the waypoint's connections to the shop's servers.
+# In sidecar mode, the Sidecar resources of Chapter 27 set them on each
+# inbound sidecar; a waypoint pools connections itself and reads them
+# from the DestinationRule. Keep each below the server's keep-alive.
+# If a DestinationRule for the host already exists, add the field to
+# it: Istio applies only one DestinationRule per host.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: inventory-idle
+  namespace: shop
+spec:
+  host: inventory.shop.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      http:
+        idleTimeout: 4s                                        # (1)
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: orders-idle
+  namespace: shop
+spec:
+  host: orders.shop.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      http:
+        idleTimeout: 4s
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: cart-idle
+  namespace: shop
+spec:
+  host: cart.shop.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      http:
+        idleTimeout: 50s                                       # (2)

@@ -1,0 +1,23 @@
+# OpenShift only: a TempoMonolithic for the lab in the project tracing.
+# The project carries the discovery label from Chapter 10, so that istiod
+# knows the Service tempo-lab that the tracing provider names.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tracing
+  labels:
+    istio-discovery: enabled                                   # (1)
+---
+apiVersion: tempo.grafana.com/v1alpha1
+kind: TempoMonolithic
+metadata:
+  name: lab
+  namespace: tracing
+spec:
+  storage:
+    traces:
+      backend: memory                                          # (2)
+  jaegerui:
+    enabled: true                                              # (3)
+    route:
+      enabled: true

@@ -1,0 +1,13 @@
+# The same policy with the waypoint's identity added as a second
+# principal, so that requests through the waypoint get in again.
+removePolicies: [reviews-l4]
+addPolicies:
+- name: reviews-l4
+  namespace: bookinfo
+  scope: WorkloadSelector
+  action: Allow
+  dryRun: false
+  rules:
+  - - - principals:
+        - !Exact tektutor.org/ns/bookinfo/sa/bookinfo-productpage
+        - !Exact tektutor.org/ns/bookinfo/sa/waypoint

@@ -1,0 +1,19 @@
+# Ambient mode: the Gateway API plugin changes the HTTPRoute's weights,
+# and the analysis reads the metrics that the waypoint reports.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: inventory
+spec:
+  strategy:
+    canary:
+      trafficRouting:
+        plugins:
+          argoproj-labs/gatewayAPI:
+            httpRoute: inventory
+      analysis:
+        args:
+        - name: service
+          value: inventory-canary
+        - name: reporter
+          value: waypoint

@@ -1,0 +1,21 @@
+# An overlay for the lab installation of Chapter 8: istiod watches only
+# namespaces with the label istio-discovery=enabled. Install it with:
+#   istioctl install -y -f ch08/istio/lab-install.yaml \
+#     -f ch23/mesh/discovery-selectors.yaml
+# Label every namespace of the mesh first, istio-system included.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: lab
+  namespace: istio-system
+spec:
+  meshConfig:
+    discoverySelectors:                           # (1)
+    - matchLabels:
+        istio-discovery: enabled
+    defaultServiceExportTo:                       # (2)
+    - "*"
+    defaultVirtualServiceExportTo:
+    - "."
+    defaultDestinationRuleExportTo:
+    - "."

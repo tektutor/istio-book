@@ -1,0 +1,15 @@
+# Outlier detection for inventory: a pod that answers three 5xx errors
+# in a row leaves the load balancing pool for 30 seconds or more.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  host: inventory
+  trafficPolicy:
+    outlierDetection:
+      consecutive5xxErrors: 3             # (1)
+      interval: 1s                        # (2)
+      baseEjectionTime: 30s               # (3)
+      maxEjectionPercent: 100             # (4)

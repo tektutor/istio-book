@@ -1,0 +1,10 @@
+# ch13/ocp/istiocni-ambient.yaml for the upgrade lab: the CNI agent starts
+# on the same version as the control plane.
+apiVersion: sailoperator.io/v1
+kind: IstioCNI
+metadata:
+  name: default
+spec:
+  namespace: istio-cni
+  version: v1.30.4
+  profile: ambient

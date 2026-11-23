@@ -1,0 +1,38 @@
+# Recording rules and alerts for two platform SLOs of the mesh:
+#   propagation: 99% of config changes reach the proxies within 5 seconds,
+#                over 30 days;
+#   acceptance:  proxies reject no config.
+# The burn-rate alerts follow the method of Chapter 34.
+groups:
+- name: mesh-platform-slo
+  rules:
+  - record: mesh:config_pushes:rate5m                           # (1)
+    expr: sum(rate(pilot_proxy_convergence_time_count[5m]))
+  - record: mesh:config_pushes_slow:rate5m                      # (2)
+    expr: |
+      mesh:config_pushes:rate5m
+        - sum(rate(pilot_proxy_convergence_time_bucket{le=~"5(\\.0)?"}[5m]))
+  - record: mesh:config_pushes_slow:ratio_rate5m
+    expr: mesh:config_pushes_slow:rate5m / mesh:config_pushes:rate5m
+  - record: mesh:config_pushes_slow:ratio_rate1h
+    expr: |
+      (sum(rate(pilot_proxy_convergence_time_count[1h]))
+        - sum(rate(pilot_proxy_convergence_time_bucket{le=~"5(\\.0)?"}[1h])))
+      / sum(rate(pilot_proxy_convergence_time_count[1h]))
+  - record: mesh:config_propagation_seconds:p99_5m              # (3)
+    expr: |
+      histogram_quantile(0.99,
+        sum by (le) (rate(pilot_proxy_convergence_time_bucket[5m])))
+  - alert: MeshConfigPropagationSLOBurn                         # (4)
+    expr: |
+      mesh:config_pushes_slow:ratio_rate1h > 14.4 * 0.01
+      and mesh:config_pushes_slow:ratio_rate5m > 14.4 * 0.01
+    labels: {severity: critical}
+    annotations:
+      summary: Config pushes slower than 5 s use the 30-day error budget
+        14 times too fast.
+  - alert: MeshConfigRejected                                   # (5)
+    expr: sum(increase(pilot_total_xds_rejects[10m])) > 0
+    labels: {severity: critical}
+    annotations:
+      summary: Proxies rejected config; the acceptance SLO allows none.

@@ -1,0 +1,16 @@
+# OpenShift only: the router passes the TLS connection for the shop
+# through to the gateway, which holds the certificate.
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: shop
+  namespace: ingress
+spec:
+  host: shop.tektutor.test
+  to:
+    kind: Service
+    name: public-istio
+  port:
+    targetPort: shop-https
+  tls:
+    termination: passthrough

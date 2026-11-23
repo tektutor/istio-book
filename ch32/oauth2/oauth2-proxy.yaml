@@ -1,0 +1,74 @@
+# oauth2-proxy as an external authorization service for the shop's
+# frontend. It answers each check from its session cookie, or sends the
+# browser to Keycloak to log in. Fill in the Secret before you apply it.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oauth2-proxy
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth2-proxy
+  namespace: oauth2-proxy
+stringData:
+  client-secret: REPLACE-WITH-THE-KEYCLOAK-CLIENT-SECRET      # (1)
+  cookie-secret: REPLACE-WITH-32-RANDOM-BYTES-IN-BASE64
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oauth2-proxy
+  namespace: oauth2-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oauth2-proxy
+  template:
+    metadata:
+      labels:
+        app: oauth2-proxy
+    spec:
+      containers:
+      - name: oauth2-proxy
+        image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5
+        args:
+        - --http-address=0.0.0.0:4180
+        - --provider=keycloak-oidc
+        - --oidc-issuer-url=https://keycloak.tektutor.test/realms/shop  # (2)
+        - --client-id=shop-web
+        - --redirect-url=https://shop.tektutor.test/oauth2/callback
+        - --email-domain=*
+        - --upstream=static://200                              # (3)
+        - --reverse-proxy=true
+        - --set-xauthrequest=true                              # (4)
+        - --pass-access-token=true
+        - --set-authorization-header=true
+        - --skip-provider-button=true
+        env:
+        - name: OAUTH2_PROXY_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef: { name: oauth2-proxy, key: client-secret }
+        - name: OAUTH2_PROXY_COOKIE_SECRET
+          valueFrom:
+            secretKeyRef: { name: oauth2-proxy, key: cookie-secret }
+        ports:
+        - containerPort: 4180
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oauth2-proxy
+  namespace: oauth2-proxy
+spec:
+  selector:
+    app: oauth2-proxy
+  ports:
+  - name: http
+    port: 4180
+    targetPort: 4180

@@ -1,0 +1,25 @@
+# The selector policy of Chapter 31 for the time of the move. As soon as
+# orders or cart is in ambient mode, its calls reach inventory's sidecar
+# through the waypoint, with the waypoint's identity. Delete this policy
+# when inventory itself moves.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: inventory-allow
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: inventory
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - tektutor.org/ns/shop/sa/orders
+        - tektutor.org/ns/shop/sa/cart
+        - tektutor.org/ns/shop/sa/waypoint                     # (1)
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/stock/*"]

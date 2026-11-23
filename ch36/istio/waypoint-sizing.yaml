@@ -1,0 +1,62 @@
+# Production settings for the bookinfo waypoint: two to five replicas
+# that scale on CPU, spread over nodes, with a disruption budget. istiod
+# merges each key into the object it generates for the Gateway.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: waypoint-params
+  namespace: bookinfo
+data:
+  deployment: |                                                # (1)
+    spec:
+      template:
+        spec:
+          topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels:
+                gateway.networking.k8s.io/gateway-name: waypoint
+          containers:
+          - name: istio-proxy
+            resources:
+              requests:
+                cpu: 500m
+                memory: 256Mi
+              limits:
+                cpu: null                                      # (2)
+                memory: 1Gi
+  horizontalPodAutoscaler: |                                   # (3)
+    spec:
+      minReplicas: 2
+      maxReplicas: 5
+      metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 70
+  podDisruptionBudget: |
+    spec:
+      minAvailable: 1
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: waypoint
+  namespace: bookinfo
+  labels:
+    istio.io/waypoint-for: service
+spec:
+  gatewayClassName: istio-waypoint
+  infrastructure:
+    parametersRef:
+      group: ""
+      kind: ConfigMap
+      name: waypoint-params
+  listeners:
+  - name: mesh
+    port: 15008
+    protocol: HBONE

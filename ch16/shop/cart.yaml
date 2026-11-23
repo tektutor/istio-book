@@ -1,0 +1,73 @@
+# The Spring Boot cart, with two replicas so that later chapters can show
+# which pod serves each user.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cart
+  namespace: shop
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart
+  namespace: shop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cart
+  template:
+    metadata:
+      labels:
+        app: cart
+        version: v1
+    spec:
+      serviceAccountName: cart
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: cart
+        image: tektutor/cart:1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 30
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 384Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart
+  namespace: shop
+spec:
+  selector:
+    app: cart
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    appProtocol: http

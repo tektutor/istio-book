@@ -1,0 +1,9 @@
+# Deny every request to every workload in shop.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-nothing
+  namespace: shop
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"   # after the allow rules
+spec: {}

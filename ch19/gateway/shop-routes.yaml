@@ -1,0 +1,48 @@
+# The shop through the gateway: the React app for every path, the cart
+# API under /api/cart/, and a redirect from plain HTTP to HTTPS.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: shop
+  namespace: shop
+spec:
+  parentRefs:
+  - name: public
+    namespace: ingress
+    sectionName: shop-https
+  hostnames:
+  - shop.tektutor.test
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/cart                           # (1)
+    backendRefs:
+    - name: cart
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /                                   # (2)
+    backendRefs:
+    - name: frontend
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: shop-redirect
+  namespace: shop
+spec:
+  parentRefs:
+  - name: public
+    namespace: ingress
+    sectionName: http
+  hostnames:
+  - shop.tektutor.test
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https                              # (3)
+        statusCode: 301

@@ -1,0 +1,13 @@
+# Scope for the sizing namespace: its sidecars receive configuration only
+# for their own namespace and for istio-system, instead of for every
+# Service in the mesh.
+apiVersion: networking.istio.io/v1
+kind: Sidecar
+metadata:
+  name: default
+  namespace: sizing
+spec:
+  egress:
+  - hosts:
+    - "./*"                                              # (1)
+    - "istio-system/*"                                   # (2)

@@ -1,0 +1,38 @@
+# The Istio gateway that replaces Ingress NGINX for the three hosts.
+# It lives in shop, next to the certificates, until the cutover is done.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: shop-edge
+  namespace: shop
+spec:
+  gatewayClassName: istio
+  infrastructure:
+    annotations:
+      proxy.istio.io/config: |
+        connectionSettings:
+          profile: EDGE
+        gatewayTopology:
+          numTrustedProxies: 0
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+  - name: shop
+    port: 443
+    protocol: HTTPS
+    hostname: shop.tektutor.test
+    tls:
+      certificateRefs: [{name: shop-tls}]
+  - name: admin
+    port: 443
+    protocol: HTTPS
+    hostname: admin.tektutor.test
+    tls:
+      certificateRefs: [{name: admin-tls}]
+  - name: grpc
+    port: 443
+    protocol: HTTPS
+    hostname: grpc.tektutor.test
+    tls:
+      certificateRefs: [{name: grpc-tls}]

@@ -1,0 +1,15 @@
+# Lab 7.1: one small change to follow from kubectl apply to the proxy.
+# Calls to inventory from inside the mesh time out after 3 seconds.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  hosts:
+  - inventory
+  http:
+  - route:
+    - destination:
+        host: inventory
+    timeout: 3s

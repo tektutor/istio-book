@@ -1,0 +1,70 @@
+# Ambient mode: a waypoint in its own namespace acts as the egress
+# gateway. The namespace label sends traffic for every service defined
+# in istio-egress, ServiceEntries included, through the waypoint.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-egress
+  labels:
+    istio.io/dataplane-mode: ambient
+    istio.io/use-waypoint: waypoint                    # (1)
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: waypoint
+  namespace: istio-egress
+  labels:
+    istio.io/waypoint-for: service
+spec:
+  gatewayClassName: istio-waypoint
+  listeners:
+  - name: mesh
+    port: 15008
+    protocol: HBONE
+---
+# The application calls port 80; the waypoint sends it to port 443.
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: httpbin-org
+  namespace: istio-egress
+spec:
+  hosts:
+  - httpbin.org
+  location: MESH_EXTERNAL
+  ports:
+  - number: 80
+    name: http
+    protocol: HTTP
+    targetPort: 443                                    # (2)
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: httpbin-org-tls
+  namespace: istio-egress
+spec:
+  host: httpbin.org
+  trafficPolicy:
+    tls:
+      mode: SIMPLE                                     # (3)
+---
+# Policy on the external service itself: GET on /get only.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: httpbin-org
+  namespace: istio-egress
+spec:
+  targetRefs:
+  - kind: ServiceEntry
+    group: networking.istio.io
+    name: httpbin-org                                  # (4)
+  action: ALLOW
+  rules:
+  - to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/get"]

@@ -1,0 +1,10 @@
+# The OpenShift version of `istioctl tag set canary --revision default`:
+# a revision tag that the Sail operator turns into an injection webhook.
+apiVersion: sailoperator.io/v1
+kind: IstioRevisionTag
+metadata:
+  name: canary
+spec:
+  targetRef:
+    kind: Istio
+    name: default

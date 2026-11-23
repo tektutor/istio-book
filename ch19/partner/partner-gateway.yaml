@@ -1,0 +1,53 @@
+# A separate gateway for partner companies. Every client must present a
+# certificate signed by the partner CA.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: partners
+  namespace: ingress
+spec:
+  gatewayClassName: istio
+  tls:
+    frontend:
+      default:
+        validation:
+          mode: AllowValidOnly                     # (1)
+          caCertificateRefs:
+          - group: ""
+            kind: ConfigMap
+            name: partner-ca                       # (2)
+  listeners:
+  - name: https
+    port: 443
+    protocol: HTTPS
+    hostname: partner.tektutor.test
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: partner-tls
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            tektutor.org/ingress: allowed
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: partner-orders
+  namespace: shop
+spec:
+  parentRefs:
+  - name: partners
+    namespace: ingress
+  hostnames:
+  - partner.tektutor.test
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/orders/
+    backendRefs:
+    - name: orders
+      port: 8080

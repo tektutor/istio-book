@@ -1,0 +1,7 @@
+# The label istio.io/use-waypoint=waypoint on the Service reviews: istiod
+# adds the waypoint's address to the Service, and nothing else changes.
+setServices:
+  reviews:
+    waypoint:
+      destination: /10.96.10.20                                  # (1)
+      hboneMtlsPort: 15008

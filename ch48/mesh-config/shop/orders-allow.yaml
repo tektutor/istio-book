@@ -1,0 +1,24 @@
+# Let the curl pod, Fortio and the public gateway call the orders API.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: orders-allow
+  namespace: shop
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  selector:
+    matchLabels:
+      app: orders
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/shop/sa/curl
+        - cluster.local/ns/shop/sa/default
+        - cluster.local/ns/ingress/sa/public-istio
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/orders/*"]

@@ -1,0 +1,11 @@
+# A patch for the orders Deployment: ask for 12-hour certificates
+# instead of the default 24 hours.
+#   kubectl patch deployment orders -n shop \
+#     --patch-file ch28/k8s/orders-cert-ttl.yaml
+spec:
+  template:
+    metadata:
+      annotations:
+        proxy.istio.io/config: |                                # (1)
+          proxyMetadata:
+            SECRET_TTL: 12h

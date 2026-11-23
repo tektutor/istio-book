@@ -1,0 +1,27 @@
+# ch10/mesh/istio.yaml for the first cluster of a multi-primary mesh.
+# The second cluster uses the same file with its own cluster name and
+# network, and the same mesh ID.
+apiVersion: sailoperator.io/v1
+kind: Istio
+metadata:
+  name: default
+spec:
+  namespace: istio-system
+  version: v1.30.5
+  updateStrategy:
+    type: InPlace
+  values:
+    global:
+      meshID: mesh1                         # (1)
+      multiCluster:
+        clusterName: cluster1
+      network: network1
+    meshConfig:
+      discoverySelectors:                   # (2)
+      - matchLabels:
+          istio-discovery: enabled
+    pilot:
+      resources:
+        requests:
+          cpu: 200m
+          memory: 512Mi

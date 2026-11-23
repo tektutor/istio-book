@@ -1,0 +1,80 @@
+# The lab's workloads in the namespace shop: three server pods spread over
+# the nodes, two Services for the same pods, and a client pod whose
+# workload certificate lasts 20 minutes instead of 24 hours.
+apiVersion: v1
+kind: Service
+metadata:
+  name: server
+  namespace: shop
+spec:
+  selector: {app: server}
+  ports: [{name: http, port: 8000}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server-b                                    # (1)
+  namespace: shop
+spec:
+  selector: {app: server}
+  ports: [{name: http, port: 8000}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+  namespace: shop
+spec:
+  replicas: 3
+  selector:
+    matchLabels: {app: server}
+  template:
+    metadata:
+      labels: {app: server}
+    spec:
+      topologySpreadConstraints:                    # (2)
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels: {app: server}
+      containers:
+      - name: server
+        image: docker.io/library/python:3.13-slim
+        command: ["python3", "/app/server.py"]
+        env:
+        - name: POD_NAME
+          valueFrom: {fieldRef: {fieldPath: metadata.name}}
+        ports: [{containerPort: 8000}]
+        readinessProbe:
+          httpGet: {path: /, port: 8000}
+        volumeMounts: [{name: app, mountPath: /app}]
+      volumes:
+      - name: app
+        configMap: {name: lab-app}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: client}
+  template:
+    metadata:
+      labels: {app: client}
+      annotations:
+        proxy.istio.io/config: |                    # (3)
+          proxyMetadata:
+            SECRET_TTL: 20m
+    spec:
+      containers:
+      - name: client
+        image: docker.io/library/python:3.13-slim
+        command: ["sleep", "infinity"]
+        volumeMounts: [{name: app, mountPath: /app}]
+      volumes:
+      - name: app
+        configMap: {name: lab-app}

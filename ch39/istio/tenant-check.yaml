@@ -1,0 +1,25 @@
+# The tenant check on the HTTP listener of the public gateway. The
+# gateway's istio-agent pulls the image from the in-cluster registry;
+# istiod sends the plugin's configuration to this gateway only.
+apiVersion: extensions.istio.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: tenant-check
+  namespace: ingress
+spec:
+  targetRefs:
+  - kind: Gateway                                              # (1)
+    group: gateway.networking.k8s.io
+    name: public
+  url: oci://registry.kube-system.svc.cluster.local:80/tenant-check:1.0.0  # (7)
+  imagePullPolicy: IfNotPresent                                # (2)
+  phase: AUTHN                                                 # (3)
+  failStrategy: FAIL_CLOSE                                     # (4)
+  match:
+  - ports:                                                     # (5)
+    - number: 80
+  pluginConfig:                                                # (6)
+    header: x-tenant
+    tenants:
+    - acme
+    - globex

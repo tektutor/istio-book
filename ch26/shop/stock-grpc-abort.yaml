@@ -1,0 +1,32 @@
+# Faults for a gRPC service use gRPC status codes. Every GetStock call
+# with the header x-chaos-test fails with UNAVAILABLE.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: stock-grpc
+  namespace: shop
+spec:
+  hosts:
+  - stock-grpc
+  http:
+  - name: chaos
+    match:
+    - headers:
+        x-chaos-test:
+          exact: "true"
+    fault:
+      abort:
+        grpcStatus: UNAVAILABLE                    # (1)
+        percentage:
+          value: 100
+    route:
+    - destination:
+        host: stock-grpc
+        port:
+          number: 9090
+  - name: everyone-else
+    route:
+    - destination:
+        host: stock-grpc
+        port:
+          number: 9090

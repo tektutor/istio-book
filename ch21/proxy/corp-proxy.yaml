@@ -1,0 +1,75 @@
+# All traffic to the internet must go through the company's HTTP proxy,
+# corp-proxy.tektutor.test on port 3128. The applications open TLS to
+# httpbin.org as usual; the sidecar sends the connection to the proxy
+# inside an HTTP CONNECT tunnel.
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: corp-proxy
+  namespace: shop
+spec:
+  hosts:
+  - corp-proxy.tektutor.test
+  addresses:
+  - 10.40.0.8                                          # (1)
+  location: MESH_EXTERNAL
+  ports:
+  - number: 3128
+    name: tcp-proxy
+    protocol: TCP
+  resolution: DNS
+  exportTo:
+  - "."
+---
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: httpbin-org-tls
+  namespace: shop
+spec:
+  hosts:
+  - httpbin.org
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  resolution: DNS
+  exportTo:
+  - "."
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: corp-proxy
+  namespace: shop
+spec:
+  host: corp-proxy.tektutor.test
+  exportTo:
+  - "."
+  trafficPolicy:
+    tunnel:
+      protocol: CONNECT                                # (2)
+      targetHost: httpbin.org
+      targetPort: 443
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: httpbin-via-corp-proxy
+  namespace: shop
+spec:
+  hosts:
+  - httpbin.org
+  exportTo:
+  - "."
+  tls:
+  - match:
+    - port: 443
+      sniHosts:
+      - httpbin.org                                    # (3)
+    route:
+    - destination:
+        host: corp-proxy.tektutor.test
+        port:
+          number: 3128

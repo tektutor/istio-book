@@ -1,0 +1,57 @@
+# An egress waypoint for ambient workloads: calls to api.github.com from
+# any namespace go through the waypoint egress-waypoint in istio-egress,
+# where you can apply routes, policies and logs.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-egress
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: egress-waypoint
+  namespace: istio-egress
+  labels:
+    istio.io/waypoint-for: service
+spec:
+  gatewayClassName: istio-waypoint
+  listeners:
+  - name: mesh
+    port: 15008
+    protocol: HBONE
+    allowedRoutes:
+      namespaces:
+        from: All                                              # (1)
+---
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: github-api
+  namespace: istio-egress
+  labels:
+    istio.io/use-waypoint: egress-waypoint                     # (2)
+spec:
+  exportTo: ["*"]
+  hosts:
+  - api.github.com
+  ports:
+  - number: 443
+    name: tls
+    protocol: TLS
+  resolution: DNS
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: github-api-callers
+  namespace: istio-egress
+spec:
+  targetRefs:
+  - kind: ServiceEntry                                         # (3)
+    group: networking.istio.io
+    name: github-api
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        namespaces: ["bookinfo"]

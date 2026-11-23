@@ -1,0 +1,56 @@
+# The shared gateway from Chapter 15 with an HTTPS listener for the shop,
+# the EDGE connection profile, and its own sizing.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: public
+  namespace: ingress
+spec:
+  gatewayClassName: istio
+  infrastructure:
+    annotations:
+      proxy.istio.io/config: |                     # (1)
+        connectionSettings:
+          profile: EDGE
+    parametersRef:                                 # (2)
+      group: ""
+      kind: ConfigMap
+      name: public-gateway-options
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            tektutor.org/ingress: allowed
+  - name: shop-https                               # (3)
+    port: 443
+    protocol: HTTPS
+    hostname: shop.tektutor.test
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: shop-tls                             # (4)
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            tektutor.org/ingress: allowed
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: public-gateway-options
+  namespace: ingress
+data:                                              # (5)
+  horizontalPodAutoscaler: |
+    spec:
+      minReplicas: 2
+      maxReplicas: 5
+  podDisruptionBudget: |
+    spec:
+      minAvailable: 1

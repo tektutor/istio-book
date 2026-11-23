@@ -1,0 +1,30 @@
+# A maintenance answer for the cart API while the cart is down. The
+# gateway answers itself and never calls the cart.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: shop-edge
+  namespace: shop
+spec:
+  hosts:
+  - shop.tektutor.test
+  gateways:
+  - shop/shop-gateway
+  http:
+  - name: cart-maintenance
+    match:
+    - uri:
+        prefix: /api/cart/
+    directResponse:
+      status: 503
+      body:
+        string: '{"error": "the cart is closed for maintenance until 06:00"}'
+    headers:
+      response:
+        set:
+          content-type: application/json
+          retry-after: "3600"
+  - name: frontend
+    route:
+    - destination:
+        host: frontend

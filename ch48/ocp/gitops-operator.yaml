@@ -1,0 +1,26 @@
+# OpenShift only: the OpenShift GitOps operator, which brings Argo CD and,
+# through the RolloutManager resource, Argo Rollouts. The operator also
+# creates the project openshift-gitops with a default Argo CD instance.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-gitops-operator
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: openshift-gitops-operator
+  namespace: openshift-gitops-operator
+spec: {}                                                       # (1)
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: openshift-gitops-operator
+  namespace: openshift-gitops-operator
+spec:
+  name: openshift-gitops-operator
+  channel: latest
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Automatic

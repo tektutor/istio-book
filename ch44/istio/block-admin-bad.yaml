@@ -1,0 +1,13 @@
+# Meant to block /admin for the whole mesh. The rule uses notPaths by
+# mistake, so it denies every path except /admin.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: block-admin
+  namespace: istio-system
+spec:
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        notPaths: ["/admin*"]

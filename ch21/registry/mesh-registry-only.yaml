@@ -1,0 +1,13 @@
+# An overlay for the lab installation of Chapter 8: REGISTRY_ONLY for
+# every sidecar in the mesh. Install it together with the base file:
+#   istioctl install -y -f ch08/istio/lab-install.yaml \
+#     -f ch21/registry/mesh-registry-only.yaml
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: lab
+  namespace: istio-system
+spec:
+  meshConfig:
+    outboundTrafficPolicy:
+      mode: REGISTRY_ONLY               # (1)

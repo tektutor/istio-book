@@ -1,0 +1,80 @@
+# The shop host after the migration. Prefix matches instead of the
+# regular expressions that Ingress NGINX forced on the whole host, and
+# the rewrites that ingress2gateway could not translate.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: shop-migrated
+  namespace: shop
+spec:
+  parentRefs:
+  - name: shop-edge
+    sectionName: shop
+  hostnames: [shop.tektutor.test]
+  rules:
+  - matches:                                       # routes 2 and 7
+    - path: {type: PathPrefix, value: /api/cart}
+    - path: {type: PathPrefix, value: /api/basket}
+    filters: &cors
+    - type: CORS
+      cors:                                        # (1)
+        allowOrigins: ["http://localhost:5173"]
+        allowMethods: [GET, POST, DELETE]
+        allowHeaders: [content-type, x-shop-user]
+        maxAge: 86400
+    backendRefs: [{name: cart, port: 8080}]
+    timeouts: {request: 30s}                       # (2)
+  - matches:                                       # route 3
+    - path: {type: PathPrefix, value: /api/orders}
+    filters: *cors
+    backendRefs: [{name: orders, port: 8080}]
+    timeouts: {request: 30s}
+  - matches:                                       # route 4 and canary
+    - path: {type: PathPrefix, value: /api/stock}
+    filters: *cors
+    backendRefs:
+    - {name: inventory, port: 8080, weight: 90}
+    - {name: inventory-v2, port: 8080, weight: 10}
+    timeouts: {request: 30s}
+  - matches:                                       # route 5
+    - path: {type: PathPrefix, value: /api/v1/cart}
+    filters:
+    - type: URLRewrite
+      urlRewrite:                                  # (3)
+        path: {type: ReplacePrefixMatch, replacePrefixMatch: /api/cart}
+    backendRefs: [{name: cart, port: 8080}]
+  - matches:                                       # route 6
+    - path: {type: PathPrefix, value: /api/v1/orders}
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path: {type: ReplacePrefixMatch, replacePrefixMatch: /api/orders}
+    backendRefs: [{name: orders, port: 8080}]
+  - matches:                                       # route 8
+    - path: {type: PathPrefix, value: /catalogue}
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        path: {type: ReplaceFullPath, replaceFullPath: /}
+        statusCode: 301
+  - matches:                                       # route 1
+    - path: {type: PathPrefix, value: /}
+    filters:
+    - type: ResponseHeaderModifier
+      responseHeaderModifier:                      # (4)
+        set: [{name: X-Frame-Options, value: DENY}]
+    backendRefs: [{name: frontend, port: 8080}]
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: https-redirect
+  namespace: shop
+spec:
+  parentRefs:
+  - name: shop-edge
+    sectionName: http
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect: {scheme: https, statusCode: 301}

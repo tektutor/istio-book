@@ -1,0 +1,17 @@
+# Mesh-wide visibility for ServiceEntry resources (Istio 1.31). Apply it
+# on top of the lab installation:
+#   istioctl install -f ch13/istio/lab-install-ambient.yaml \
+#     -f ch14/visibility/se-visibility.yaml
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  meshConfig:
+    serviceEntryVisibility:
+      defaultVisibility: NAMESPACE               # (1)
+      applyToSidecars: true                      # (2)
+      policies:
+      - visibility: PUBLIC                       # (3)
+        matchingRules:
+        - namespaceSelector:
+            matchLabels:
+              tektutor.org/egress-owner: platform

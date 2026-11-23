@@ -1,0 +1,13 @@
+# A mesh-wide default: in every namespace without its own Sidecar
+# resource, the sidecars see only their own namespace and istio-system.
+# A Sidecar in the root namespace with no workloadSelector does this.
+apiVersion: networking.istio.io/v1
+kind: Sidecar
+metadata:
+  name: default
+  namespace: istio-system               # (1)
+spec:
+  egress:
+  - hosts:
+    - "./*"                             # (2)
+    - "istio-system/*"

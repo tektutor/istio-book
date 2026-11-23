@@ -1,0 +1,100 @@
+# The TekTutor Shop price feed, and a client pod to call it from.
+# The Service port has a name that Istio does not recognise.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: feed
+  namespace: shop
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feed
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feed
+  template:
+    metadata:
+      labels:
+        app: feed
+        version: v1
+    spec:
+      serviceAccountName: feed
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: feed
+        image: tektutor/feed:1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 7070
+        readinessProbe:
+          tcpSocket:
+            port: 7070
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 20m
+            memory: 24Mi
+          limits:
+            memory: 48Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feed
+  namespace: shop
+spec:
+  selector:
+    app: feed
+  ports:
+  - name: feed                    # (1)
+    port: 7070
+    targetPort: 7070
+---
+# The client runs the same image, which can also ask for a price.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feed-client
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feed-client
+  template:
+    metadata:
+      labels:
+        app: feed-client
+        version: v1
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: client
+        image: tektutor/feed:1.0
+        imagePullPolicy: IfNotPresent
+        command: ["sleep", "infinity"]                     # (2)
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            memory: 48Mi

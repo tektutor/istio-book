@@ -1,0 +1,21 @@
+# A mistake to recognise, not to apply: the full request path as a
+# label. Every order ID and SKU creates new series in every proxy that
+# reports the request, until Prometheus runs out of memory.
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: inventory-path-label
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: inventory
+  metrics:
+  - providers:
+    - name: prometheus
+    overrides:
+    - match:
+        metric: REQUEST_COUNT
+      tagOverrides:
+        request_path:
+          value: request.url_path

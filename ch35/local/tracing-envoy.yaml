@@ -1,0 +1,194 @@
+# The tracing configuration that istiod writes into the sidecars of
+# orders and inventory, in one Envoy process, with Jaeger as the
+# OpenTelemetry backend:
+#   18990  orders inbound; the orders application listens on 18982
+#   18991  orders outbound to inventory
+#   18993  stands in for an application that drops the trace headers:
+#          it removes them and passes the call on to 18991
+#   18992  inventory inbound; the inventory application listens on 18983
+node:
+  id: sidecar~127.0.0.1~tracing-demo.shop~shop.svc.cluster.local
+  cluster: tracing-demo.shop
+static_resources:
+  listeners:
+  - name: orders_inbound
+    traffic_direction: INBOUND
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18990 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: orders_inbound
+          tracing: &orders_tracing                               # (1)
+            random_sampling: { value: 100 }                      # (2)
+            custom_tags:                                         # (3)
+            - { tag: istio.canonical_service, literal: { value: orders } }
+            - { tag: istio.canonical_revision, literal: { value: v1 } }
+            - { tag: istio.namespace, literal: { value: shop } }
+            - { tag: istio.mesh_id, literal: { value: tektutor.org } }
+            - { tag: istio.cluster_id, literal: { value: Kubernetes } }
+            provider:
+              name: envoy.tracers.opentelemetry
+              typed_config:
+                "@type": "type.googleapis.com/envoy.config.trace.v3.\
+                  OpenTelemetryConfig"
+                service_name: orders.shop                        # (4)
+                grpc_service:
+                  envoy_grpc:
+                    cluster_name: "outbound|4317||jaeger-collector.\
+                      istio-system.svc.cluster.local"
+                    authority: jaeger-collector.istio-system.svc.cluster.local
+          route_config:
+            virtual_hosts:
+            - name: orders
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route: { cluster: orders_app }
+                decorator:                                       # (5)
+                  operation: orders.shop.svc.cluster.local:8080/*
+          http_filters: &router
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+                router.v3.Router"
+  - name: orders_outbound
+    traffic_direction: OUTBOUND
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18991 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: orders_outbound
+          tracing: *orders_tracing
+          route_config:
+            virtual_hosts:
+            - name: inventory
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route: { cluster: inventory_inbound }
+                decorator:
+                  operation: inventory.shop.svc.cluster.local:8080/*
+          http_filters: *router
+  - name: app_drops_headers
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18993 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: app_drops_headers
+          route_config:
+            request_headers_to_remove:                           # (6)
+            - traceparent
+            - tracestate
+            - b3
+            - x-b3-traceid
+            - x-b3-spanid
+            - x-b3-parentspanid
+            - x-b3-sampled
+            virtual_hosts:
+            - name: inventory
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route: { cluster: orders_outbound }
+          http_filters: *router
+  - name: inventory_inbound
+    traffic_direction: INBOUND
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18992 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: inventory_inbound
+          tracing:
+            random_sampling: { value: 100 }
+            custom_tags:
+            - { tag: istio.canonical_service, literal: { value: inventory } }
+            - { tag: istio.canonical_revision, literal: { value: v1 } }
+            - { tag: istio.namespace, literal: { value: shop } }
+            - { tag: istio.mesh_id, literal: { value: tektutor.org } }
+            - { tag: istio.cluster_id, literal: { value: Kubernetes } }
+            provider:
+              name: envoy.tracers.opentelemetry
+              typed_config:
+                "@type": "type.googleapis.com/envoy.config.trace.v3.\
+                  OpenTelemetryConfig"
+                service_name: inventory.shop
+                grpc_service:
+                  envoy_grpc:
+                    cluster_name: "outbound|4317||jaeger-collector.\
+                      istio-system.svc.cluster.local"
+                    authority: jaeger-collector.istio-system.svc.cluster.local
+          route_config:
+            virtual_hosts:
+            - name: inventory
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route: { cluster: inventory_app }
+                decorator:
+                  operation: inventory.shop.svc.cluster.local:8080/*
+          http_filters: *router
+  clusters:
+  - name: orders_app
+    connect_timeout: 1s
+    load_assignment:
+      cluster_name: orders_app
+      endpoints:
+      - lb_endpoints:
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18982 } } }
+  - name: orders_outbound
+    connect_timeout: 1s
+    load_assignment:
+      cluster_name: orders_outbound
+      endpoints:
+      - lb_endpoints:
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18991 } } }
+  - name: inventory_inbound
+    connect_timeout: 1s
+    load_assignment:
+      cluster_name: inventory_inbound
+      endpoints:
+      - lb_endpoints:
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18992 } } }
+  - name: inventory_app
+    connect_timeout: 1s
+    load_assignment:
+      cluster_name: inventory_app
+      endpoints:
+      - lb_endpoints:
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18983 } } }
+  - name: "outbound|4317||jaeger-collector.istio-system.svc.cluster.local"
+    connect_timeout: 1s
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": "type.googleapis.com/envoy.extensions.upstreams.http.\
+          v3.HttpProtocolOptions"
+        explicit_http_config: { http2_protocol_options: {} }
+    load_assignment:
+      cluster_name: jaeger
+      endpoints:
+      - lb_endpoints:
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 4317 } } }
+admin:
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 19990 }

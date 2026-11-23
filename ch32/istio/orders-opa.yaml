@@ -1,0 +1,17 @@
+# Ask OPA about every request to the orders API.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: orders-limit
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: orders
+  action: CUSTOM
+  provider:
+    name: opa                                                  # (1)
+  rules:
+  - to:
+    - operation:
+        paths: ["/api/orders/*"]                               # (2)

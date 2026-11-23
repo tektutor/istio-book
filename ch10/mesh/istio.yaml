@@ -1,0 +1,20 @@
+# The control plane for the TekTutor lab cluster.
+apiVersion: sailoperator.io/v1
+kind: Istio
+metadata:
+  name: default                             # (1)
+spec:
+  namespace: istio-system                   # (2)
+  version: v1.30.5                          # (3)
+  updateStrategy:
+    type: InPlace                           # (4)
+  values:                                   # (5)
+    meshConfig:
+      discoverySelectors:                   # (6)
+      - matchLabels:
+          istio-discovery: enabled
+    pilot:
+      resources:
+        requests:
+          cpu: 200m
+          memory: 512Mi

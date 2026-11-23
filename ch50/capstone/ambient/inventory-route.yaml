@@ -1,0 +1,13 @@
+# R1 in ambient mode: an HTTPRoute for the Service inventory, which the
+# waypoint applies. Argo Rollouts' Gateway API plugin changes the weights.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: inventory
+spec:
+  parentRefs:
+  - {group: "", kind: Service, name: inventory, port: 8080}
+  rules:
+  - backendRefs:
+    - {name: inventory-stable, port: 8080, weight: 100}
+    - {name: inventory-canary, port: 8080, weight: 0}

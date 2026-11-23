@@ -1,0 +1,13 @@
+# A waypoint proxy for the shop namespace. Istio sees the
+# istio-waypoint class and deploys an Envoy proxy for this Gateway.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: waypoint
+  namespace: shop
+spec:
+  gatewayClassName: istio-waypoint     # (1)
+  listeners:
+  - name: mesh
+    port: 15008                        # (2)
+    protocol: HBONE

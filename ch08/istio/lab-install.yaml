@@ -1,0 +1,27 @@
+# The Istio installation for the labs in Parts II to V: sidecar mode,
+# the default profile, and smaller resource requests so that the lab
+# fits on a laptop. Chapter 9 explains every setting.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: lab
+  namespace: istio-system
+spec:
+  profile: default                    # (1)
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:                   # (2)
+            cpu: 200m
+            memory: 512Mi
+    ingressGateways:
+    - name: istio-ingressgateway
+      enabled: false                  # (3)
+  values:
+    global:
+      proxy:
+        resources:
+          requests:                   # (4)
+            cpu: 20m
+            memory: 64Mi

@@ -1,0 +1,14 @@
+# What ztunnel receives for a sidecar-era DENY policy on the reviews pods
+# for port 9080 and the paths /admin/*. ztunnel cannot see paths, so
+# istiod keeps only the port: every connection to port 9080 is denied.
+addPolicies:
+- name: reviews-deny-admin
+  namespace: bookinfo
+  scope: WorkloadSelector
+  action: Deny
+  dryRun: false
+  rules:
+  - - - destinationPorts: [9080]                               # (1)
+setWorkloads:
+  reviews-v1: { authorizationPolicies: [bookinfo/reviews-deny-admin] }
+  reviews-v2: { authorizationPolicies: [bookinfo/reviews-deny-admin] }

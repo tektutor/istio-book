@@ -1,0 +1,25 @@
+# A VIRTUAL_HOST patch with a list field. With MERGE, the domains of the
+# patch are added to the list that istiod generated.
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: bookinfo-domains
+  namespace: ingress
+spec:
+  targetRefs:
+  - kind: Gateway
+    group: gateway.networking.k8s.io
+    name: public
+  configPatches:
+  - applyTo: VIRTUAL_HOST
+    match:
+      context: GATEWAY
+      routeConfiguration:
+        portNumber: 80
+        vhost:
+          name: bookinfo.tektutor.test:80                      # (1)
+    patch:
+      operation: MERGE                                         # (2)
+      value:
+        domains:
+        - books.tektutor.test

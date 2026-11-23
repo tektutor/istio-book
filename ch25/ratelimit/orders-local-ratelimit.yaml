@@ -1,0 +1,46 @@
+# A local rate limit on the inbound side of every orders pod: each pod
+# accepts at most 10 requests per second, without asking any service.
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: orders-local-ratelimit
+  namespace: shop
+spec:
+  workloadSelector:
+    labels:
+      app: orders
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: envoy.filters.network.http_connection_manager
+            subFilter:
+              name: envoy.filters.http.router
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.local_ratelimit
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+            local_ratelimit.v3.LocalRateLimit"
+          stat_prefix: http_local_rate_limiter
+          token_bucket:                                 # (1)
+            max_tokens: 10
+            tokens_per_fill: 10
+            fill_interval: 1s
+          filter_enabled:                               # (2)
+            default_value:
+              numerator: 100
+              denominator: HUNDRED
+          filter_enforced:
+            default_value:
+              numerator: 100
+              denominator: HUNDRED
+          response_headers_to_add:
+          - append_action: OVERWRITE_IF_EXISTS_OR_ADD
+            header:
+              key: x-local-rate-limit                   # (3)
+              value: "true"

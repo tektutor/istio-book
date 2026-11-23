@@ -1,0 +1,18 @@
+# Connection settings for calls to the stock service. The keepalive pings
+# go over the HTTP/2 connections between the proxies, which Istio opens
+# for a port with the protocol grpc.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: stock-grpc
+  namespace: shop
+spec:
+  host: stock-grpc.shop.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      http:
+        http2KeepAlive:                             # (1)
+          interval: 30s
+          timeout: 10s
+        maxConcurrentStreams: 100                   # (2)
+        idleTimeout: 1h                             # (3)

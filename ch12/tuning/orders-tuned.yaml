@@ -1,0 +1,62 @@
+# The orders Deployment from Chapter 8 with per-workload proxy settings.
+# Only the pod template's annotations differ from ch08/shop/20-orders.yaml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orders
+  template:
+    metadata:
+      labels:
+        app: orders
+        version: v1
+      annotations:
+        sidecar.istio.io/proxyCPU: 50m                    # (1)
+        sidecar.istio.io/proxyMemory: 96Mi
+        sidecar.istio.io/proxyCPULimit: "1"
+        sidecar.istio.io/proxyMemoryLimit: 256Mi
+        proxy.istio.io/config: |                          # (2)
+          concurrency: 1
+          terminationDrainDuration: 10s
+        traffic.sidecar.istio.io/excludeOutboundIPRanges: 169.254.169.254/32
+    spec:
+      serviceAccountName: orders
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: orders
+        image: tektutor/orders:1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: INVENTORY_URL
+          value: http://inventory:8080
+        - name: APP_RETRIES
+          value: "0"
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            memory: 64Mi

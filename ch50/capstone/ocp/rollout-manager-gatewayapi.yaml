@@ -1,0 +1,17 @@
+# OpenShift GitOps: the RolloutManager owns the controller's ConfigMap,
+# so the Gateway API plugin is declared here instead of in
+# install/rollouts-gatewayapi-plugin.yaml. The ClusterRole of that file
+# is still needed; bind it to the controller's service account in
+# openshift-gitops (oc get sa -n openshift-gitops shows its name).
+apiVersion: argoproj.io/v1alpha1
+kind: RolloutManager
+metadata:
+  name: argo-rollouts
+  namespace: openshift-gitops
+spec:
+  plugins:
+    trafficManagement:
+    - name: argoproj-labs/gatewayAPI
+      location: "https://github.com/argoproj-labs/\
+        rollouts-plugin-trafficrouter-gatewayapi/releases/download/\
+        v0.17.0/gatewayapi-plugin-linux-amd64"

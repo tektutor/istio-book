@@ -1,0 +1,41 @@
+# One Argo CD Application per cell, synced cell by cell: the canary cell
+# first, then the other cells one at a time. Each step waits until the
+# Applications of the previous step are Healthy. Needs progressive syncs
+# (Beta since Argo CD 3.3), turned on in the ApplicationSet controller.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: shop-cells
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+  - list:
+      elements:                                             # (1)
+      - {cell: cell-3, wave: canary, server: "https://cell-3:8443"}
+      - {cell: cell-1, wave: main, server: "https://cell-1:8443"}
+      - {cell: cell-2, wave: main, server: "https://cell-2:8443"}
+  strategy:
+    type: RollingSync
+    rollingSync:
+      steps:
+      - matchExpressions:
+        - {key: wave, operator: In, values: [canary]}
+      - matchExpressions:
+        - {key: wave, operator: In, values: [main]}
+        maxUpdate: 1                                        # (2)
+  template:
+    metadata:
+      name: "shop-{{.cell}}"
+      labels:
+        cell: "{{.cell}}"
+        wave: "{{.wave}}"                                   # (3)
+    spec:
+      project: default
+      source:
+        repoURL: https://git.example.com/platform/cells.git
+        targetRevision: main
+        path: "cells/{{.cell}}"                             # (4)
+      destination:
+        server: "{{.server}}"
+        namespace: shop

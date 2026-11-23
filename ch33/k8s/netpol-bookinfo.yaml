@@ -1,0 +1,32 @@
+# Defence in depth for the ambient namespace bookinfo. In ambient mode,
+# traffic from other mesh pods arrives as HBONE on port 15008, and the
+# kubelet's probes arrive from the address that the CNI agent gives them.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingress-from-mesh
+  namespace: bookinfo
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - ports:                                                     # (1)
+    - { protocol: TCP, port: 15008 }
+  - from:                                                      # (2)
+    - ipBlock:
+        cidr: 169.254.7.127/32
+  - from:                                                      # (3)
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: bookinfo
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress
+  - from:                                                      # (4)
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+    ports:
+    - { protocol: TCP, port: 15020 }
+    - { protocol: TCP, port: 15090 }

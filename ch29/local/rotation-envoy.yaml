@@ -1,0 +1,120 @@
+# Two sidecars in one Envoy, joined by mutual TLS as in the mesh:
+#   18700  the outbound side of the orders sidecar, which calls inventory
+#   18701  the inbound side of the inventory sidecar, which answers
+# Each side reads its own SDS secrets, default and ROOTCA, from its own
+# directory, which rotation-demo.sh rewrites while Envoy runs.
+node:
+  id: sidecar~127.0.0.1~mesh-1.shop~shop.svc.cluster.local
+  cluster: mesh.shop
+static_resources:
+  listeners:
+  - name: orders_outbound
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18700 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: outbound_inventory
+          route_config:
+            virtual_hosts:
+            - name: inventory
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route:
+                  cluster: "outbound|8080||inventory.shop.svc.cluster.local"
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+                router.v3.Router"
+  - name: inventory_inbound
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18701 }
+    filter_chains:
+    - transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.\
+            v3.DownstreamTlsContext"
+          require_client_certificate: true                            # (1)
+          common_tls_context:
+            tls_certificate_sds_secret_configs:
+            - name: default
+              sds_config:
+                path_config_source:
+                  path: /tmp/ch29-sds/inventory/default.yaml
+                  watched_directory: { path: /tmp/ch29-sds/inventory }
+            validation_context_sds_secret_config:
+              name: ROOTCA
+              sds_config:
+                path_config_source:
+                  path: /tmp/ch29-sds/inventory/ROOTCA.yaml
+                  watched_directory: { path: /tmp/ch29-sds/inventory }
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: inbound_8080
+          route_config:
+            virtual_hosts:
+            - name: inventory
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                direct_response:
+                  status: 200
+                  body:
+                    inline_string: "{\"sku\":\"SKU-1\",\"available\":42}\n"
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+                router.v3.Router"
+  clusters:
+  - name: "outbound|8080||inventory.shop.svc.cluster.local"
+    connect_timeout: 2s
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": "type.googleapis.com/envoy.extensions.upstreams.http.\
+          v3.HttpProtocolOptions"
+        common_http_protocol_options: { max_requests_per_connection: 1 }  # (4)
+        explicit_http_config: { http_protocol_options: {} }
+    transport_socket:
+      name: envoy.transport_sockets.tls
+      typed_config:
+        "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.\
+          v3.UpstreamTlsContext"
+        sni: outbound_.8080_._.inventory.shop.svc.cluster.local
+        common_tls_context:
+          tls_certificate_sds_secret_configs:
+          - name: default
+            sds_config:
+              path_config_source:
+                path: /tmp/ch29-sds/orders/default.yaml
+                watched_directory: { path: /tmp/ch29-sds/orders }
+          combined_validation_context:
+            default_validation_context:
+              match_typed_subject_alt_names:                          # (2)
+              - san_type: URI
+                matcher:
+                  exact: "spiffe://cluster.local/ns/shop/sa/inventory"
+            validation_context_sds_secret_config:                     # (3)
+              name: ROOTCA
+              sds_config:
+                path_config_source:
+                  path: /tmp/ch29-sds/orders/ROOTCA.yaml
+                  watched_directory: { path: /tmp/ch29-sds/orders }
+    load_assignment:
+      cluster_name: inventory
+      endpoints:
+      - lb_endpoints:
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18701 } } }
+admin:
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 19931 }

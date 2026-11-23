@@ -1,0 +1,68 @@
+# Unit tests for the query in ../error-rate.yaml, run with
+#   promtool test rules error-rate-test.yaml
+# Prometheus scrapes every 15 seconds, so each series grows by the given
+# amount every 15 seconds. "> bool 0.01" is the analysis condition:
+# 1 means the canary fails, 0 means it passes.
+rule_files: []
+evaluation_interval: 15s
+tests:
+- interval: 15s
+  input_series:
+  # canary: 19 good and 1 failed request every 15 seconds (5%)
+  - series: 'istio_requests_total{reporter="source",
+      destination_service_name="inventory-canary",
+      destination_service_namespace="shop", response_code="200"}'
+    values: '0+19x40'
+  - series: 'istio_requests_total{reporter="source",
+      destination_service_name="inventory-canary",
+      destination_service_namespace="shop", response_code="503"}'
+    values: '0+1x40'
+  promql_expr_test:
+  - expr: |
+      (sum(rate(istio_requests_total{reporter="source",
+          destination_service_name="inventory-canary",
+          destination_service_namespace="shop",
+          response_code=~"5.."}[1m])) or vector(0))
+      /
+      sum(rate(istio_requests_total{reporter="source",
+          destination_service_name="inventory-canary",
+          destination_service_namespace="shop"}[1m]))
+      > bool 0.01
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+- interval: 15s
+  input_series:
+  # a healthy canary: no request failed, so no 5xx series exists
+  - series: 'istio_requests_total{reporter="source",
+      destination_service_name="inventory-canary",
+      destination_service_namespace="shop", response_code="200"}'
+    values: '0+20x40'
+  promql_expr_test:
+  - expr: |
+      (sum(rate(istio_requests_total{reporter="source",
+          destination_service_name="inventory-canary",
+          destination_service_namespace="shop",
+          response_code=~"5.."}[1m])) or vector(0))
+      /
+      sum(rate(istio_requests_total{reporter="source",
+          destination_service_name="inventory-canary",
+          destination_service_namespace="shop"}[1m]))
+      > bool 0.01
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 0
+  # without "or vector(0)" the same query returns nothing at all
+  - expr: |
+      sum(rate(istio_requests_total{reporter="source",
+          destination_service_name="inventory-canary",
+          destination_service_namespace="shop",
+          response_code=~"5.."}[1m]))
+      /
+      sum(rate(istio_requests_total{reporter="source",
+          destination_service_name="inventory-canary",
+          destination_service_namespace="shop"}[1m]))
+    eval_time: 5m
+    exp_samples: []

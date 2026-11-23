@@ -1,0 +1,15 @@
+# A patch for the inventory Deployment: wait five seconds before the
+# application gets SIGTERM, so that the callers' proxies stop sending
+# new requests to the pod first.
+#   kubectl patch deployment inventory -n shop \
+#     --patch-file ch27/k8s/inventory-graceful.yaml
+spec:
+  template:
+    spec:
+      terminationGracePeriodSeconds: 45                        # (1)
+      containers:
+      - name: inventory
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 5                                       # (2)

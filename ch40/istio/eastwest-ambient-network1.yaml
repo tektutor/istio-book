@@ -1,0 +1,20 @@
+# The east-west gateway of cluster1 in ambient mode, as Istio's script
+# samples/multicluster/gen-eastwest-gateway.sh --network network1 --ambient
+# generates it. istiod creates its Deployment and Service.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: istio-eastwestgateway
+  namespace: istio-system
+  labels:
+    topology.istio.io/network: "network1"         # (1)
+spec:
+  gatewayClassName: "istio-east-west"             # (2)
+  listeners:
+  - name: mesh
+    port: 15008                                   # (3)
+    protocol: HBONE
+    tls:
+      mode: Terminate
+      options:
+        gateway.istio.io/tls-terminate-mode: ISTIO_MUTUAL

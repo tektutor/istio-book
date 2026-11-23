@@ -1,0 +1,30 @@
+# ch08/istio/lab-install.yaml plus ambient mode: the CNI agent and
+# ztunnel. Sidecar namespaces keep working; ambient and sidecar pods
+# can call each other.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: lab
+  namespace: istio-system
+spec:
+  profile: ambient                    # (1)
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+  values:
+    ztunnel:
+      resources:
+        requests:                     # (3)
+          cpu: 50m
+          memory: 128Mi
+    global:
+      platform: minikube              # (2)
+      proxy:
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi

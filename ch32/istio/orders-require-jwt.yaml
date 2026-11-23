@@ -1,0 +1,25 @@
+# Require a valid token for the orders API, and the realm role "admin"
+# for the admin API.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: orders-require-jwt
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: orders
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        requestPrincipals: ["*"]                               # (1)
+    to:
+    - operation:
+        paths: ["/api/orders/*"]
+  - to:
+    - operation:
+        paths: ["/api/admin/*"]
+    when:
+    - key: request.auth.claims[realm_access][roles]            # (2)
+      values: ["admin"]

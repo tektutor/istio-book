@@ -1,0 +1,17 @@
+# The PostgreSQL Service from Chapter 22, visible to the shop namespace
+# only. Sidecars in other namespaces get no cluster or listener for it,
+# whatever their Sidecar resource says.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: shop
+  annotations:
+    networking.istio.io/exportTo: "."             # (1)
+spec:
+  selector:
+    app: postgres
+  ports:
+  - name: tcp-postgres
+    port: 5432
+    targetPort: 5432

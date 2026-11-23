@@ -1,0 +1,42 @@
+# Delegation: the platform team owns the root VirtualService for the
+# host; the shop team owns the rules under /api/cart/.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: shop-root
+  namespace: istio-ingress
+spec:
+  hosts:
+  - shop.tektutor.test
+  gateways:
+  - istio-ingress/public-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/cart/
+    delegate:                                      # (1)
+      name: cart-routes
+      namespace: shop
+  - route:
+    - destination:
+        host: frontend.shop.svc.cluster.local
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: cart-routes
+  namespace: shop
+spec:                                              # (2)
+  http:
+  - match:
+    - uri:
+        prefix: /api/cart/
+      headers:
+        x-canary:
+          exact: "true"
+    route:
+    - destination:
+        host: cart-canary
+  - route:
+    - destination:
+        host: cart

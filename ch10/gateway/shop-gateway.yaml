@@ -1,0 +1,91 @@
+# An ingress gateway for TekTutor Shop, deployed with gateway injection.
+# The operator does not create gateways; you deploy them like any app.
+# The file names no namespace, so oc apply uses your current project.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: shop-gateway
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: secret-reader
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]                    # (1)
+  verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: shop-gateway-secret-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: secret-reader
+subjects:
+- kind: ServiceAccount
+  name: shop-gateway
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shop-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      istio: shop-gateway
+  template:
+    metadata:
+      annotations:
+        inject.istio.io/templates: gateway  # (2)
+      labels:
+        istio: shop-gateway
+        sidecar.istio.io/inject: "true"
+    spec:
+      serviceAccountName: shop-gateway
+      securityContext:
+        sysctls:
+        - name: net.ipv4.ip_unprivileged_port_start   # (3)
+          value: "0"
+      containers:
+      - name: istio-proxy
+        image: auto                         # (4)
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop: ["ALL"]
+        ports:
+        - containerPort: 15090
+          name: http-envoy-prom
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 2000m
+            memory: 1024Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shop-gateway
+spec:
+  type: ClusterIP                           # (5)
+  selector:
+    istio: shop-gateway
+  ports:
+  - name: status-port
+    port: 15021
+    targetPort: 15021
+  - name: http2
+    port: 80
+    targetPort: 80
+  - name: https
+    port: 443
+    targetPort: 443

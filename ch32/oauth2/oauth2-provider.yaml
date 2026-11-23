@@ -1,0 +1,20 @@
+# Register oauth2-proxy as an HTTP extension provider, on top of the lab
+# installation and the trust domain from Chapter 29:
+#   istioctl install -f ch13/istio/lab-install-ambient.yaml \
+#     -f ch29/istio/trust-domain.yaml -f ch32/oauth2/oauth2-provider.yaml -y
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  meshConfig:
+    extensionProviders:
+    - name: oauth2-proxy
+      envoyExtAuthzHttp:
+        service: oauth2-proxy.oauth2-proxy.svc.cluster.local
+        port: 4180
+        timeout: 1s
+        includeRequestHeadersInCheck: ["cookie", "authorization"]   # (1)
+        headersToUpstreamOnAllow:                              # (2)
+        - authorization
+        - x-auth-request-user
+        - x-auth-request-email
+        headersToDownstreamOnDeny: ["content-type", "set-cookie", "location"]

@@ -1,0 +1,17 @@
+# The same control plane with revision-based updates. Each change of
+# spec.version creates a new revision next to the old one.
+apiVersion: sailoperator.io/v1
+kind: Istio
+metadata:
+  name: default
+spec:
+  namespace: istio-system
+  version: v1.30.5
+  updateStrategy:
+    type: RevisionBased                     # (1)
+    inactiveRevisionDeletionGracePeriodSeconds: 30   # (2)
+  values:
+    meshConfig:
+      discoverySelectors:
+      - matchLabels:
+          istio-discovery: enabled

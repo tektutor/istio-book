@@ -1,0 +1,102 @@
+# "where": a small Python service that answers with the node and zone of
+# its pod, three pods spread over the three zones of the lab cluster.
+# A pod answers 503 while the file /tmp/fail exists in it.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: zones
+  labels:
+    istio-injection: enabled
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: where-app
+  namespace: zones
+data:
+  app.py: |
+    import http.server, json, os
+    ZONES = {"lab": "zone-a", "lab-m02": "zone-b", "lab-m03": "zone-c"}
+    NODE = os.environ["NODE_NAME"]                          # (1)
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            failing = os.path.exists("/tmp/fail")            # (2)
+            body = json.dumps({"node": NODE, "zone": ZONES.get(NODE, "?"),
+                               "pod": os.environ["HOSTNAME"]}).encode()
+            self.send_response(503 if failing else 200)
+            self.send_header("content-type", "application/json")
+            self.send_header("content-length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    http.server.ThreadingHTTPServer(("", 8080), Handler).serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: where
+  namespace: zones
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: where
+  template:
+    metadata:
+      labels:
+        app: where
+    spec:
+      topologySpreadConstraints:                          # (3)
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: where
+      containers:
+      - name: where
+        image: python:3.13-slim
+        command: ["python", "/app/app.py"]
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: app
+          mountPath: /app
+      volumes:
+      - name: app
+        configMap:
+          name: where-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: where
+  namespace: zones
+spec:
+  selector:
+    app: where
+  ports:
+  - name: http
+    port: 8080
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl
+  namespace: zones
+spec:
+  nodeSelector:
+    topology.kubernetes.io/zone: zone-a                   # (4)
+  containers:
+  - name: curl
+    image: curlimages/curl:8.16.0
+    command: ["sleep", "infinity"]

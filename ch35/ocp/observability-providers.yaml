@@ -1,0 +1,23 @@
+# ch35/istio/observability-providers.yaml for OpenShift Service Mesh 3.4:
+# a merge patch for the Istio resource from Chapter 10, with Tempo in
+# place of Jaeger. Apply it with
+#   oc patch istio default --type merge \
+#     --patch-file ch35/ocp/observability-providers.yaml
+spec:
+  values:
+    meshConfig:
+      extensionProviders:
+      - name: otel-tracing
+        opentelemetry:
+          service: tempo-lab.tracing.svc.cluster.local         # (1)
+          port: 4317
+      - name: otel-als
+        envoyOtelAls:
+          service: otel-collector.istio-system.svc.cluster.local
+          port: 4317
+          logFormat:
+            labels:
+              pod: "%ENVIRONMENT(POD_NAME)%"
+              namespace: "%ENVIRONMENT(POD_NAMESPACE)%"
+              workload: "%ENVIRONMENT(ISTIO_META_WORKLOAD_NAME)%"
+              response_flags: "%RESPONSE_FLAGS%"

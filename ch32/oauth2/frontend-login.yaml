@@ -1,0 +1,20 @@
+# Send every browser request for the shop's host through oauth2-proxy,
+# at the public gateway from Chapter 15.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: frontend-login
+  namespace: ingress
+spec:
+  targetRefs:                                                  # (1)
+  - kind: Gateway
+    group: gateway.networking.k8s.io
+    name: public
+  action: CUSTOM
+  provider:
+    name: oauth2-proxy
+  rules:
+  - to:
+    - operation:
+        hosts: ["shop.tektutor.test"]
+        notPaths: ["/oauth2/*"]                                # (2)

@@ -1,0 +1,27 @@
+# Testers see reviews v3; everybody else sees v1. The header end-user is
+# what productpage sends after a user logs in.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: reviews
+  namespace: bookinfo
+spec:
+  hosts:
+  - reviews                                        # (1)
+  http:
+  - name: testers                                  # (2)
+    match:
+    - headers:
+        end-user:
+          exact: melissa                             # (3)
+    route:
+    - destination:
+        host: reviews-v3                           # (4)
+        port:
+          number: 9080
+  - name: everyone-else
+    route:                                         # (5)
+    - destination:
+        host: reviews-v1
+        port:
+          number: 9080

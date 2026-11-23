@@ -1,0 +1,22 @@
+# The first step of a canary release of reviews v3: 10 percent of the
+# calls to reviews go to v3, the rest stay on v1. The lab changes the
+# two weights for the next steps.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: reviews
+  namespace: bookinfo
+spec:
+  parentRefs:
+  - group: ""
+    kind: Service
+    name: reviews
+    port: 9080
+  rules:
+  - backendRefs:
+    - name: reviews-v1
+      port: 9080
+      weight: 90                                   # (1)
+    - name: reviews-v3
+      port: 9080
+      weight: 10                                   # (2)

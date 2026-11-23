@@ -1,0 +1,10 @@
+# Deny by default in the payments namespace. An ALLOW policy with no
+# rules matches nothing, so every request to the namespace is denied
+# until another policy allows it.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-nothing
+  namespace: payments
+spec:
+  action: ALLOW

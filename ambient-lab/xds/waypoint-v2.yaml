@@ -1,0 +1,22 @@
+# A second waypoint, waypoint-v2, for a canary: its pod and its Service.
+addWorkloads:
+- uid: Kubernetes//Pod/bookinfo/waypoint-v2
+  name: waypoint-v2
+  namespace: bookinfo
+  serviceAccount: waypoint-v2
+  trustDomain: tektutor.org
+  workloadIps: [10.244.1.20]
+  protocol: TCP
+  node: lab
+  clusterId: Kubernetes
+  workloadName: waypoint-v2
+  canonicalName: waypoint-v2
+  canonicalRevision: latest
+  services:
+    bookinfo/waypoint-v2.bookinfo.svc.cluster.local: {15008: 15008, 15021: 15021}
+addServices:
+- name: waypoint-v2
+  namespace: bookinfo
+  hostname: waypoint-v2.bookinfo.svc.cluster.local
+  vips: [/10.96.10.21]
+  ports: {15008: 15008, 15021: 15021}

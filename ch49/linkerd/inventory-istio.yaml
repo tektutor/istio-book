@@ -1,0 +1,37 @@
+# The same in Istio: one AuthorizationPolicy, and a VirtualService for
+# the retries and the timeout.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: inventory-allow
+  namespace: shop
+spec:
+  selector:
+    matchLabels: {app: inventory}
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/shop/sa/orders
+        - cluster.local/ns/shop/sa/cart
+    to:
+    - operation:
+        ports: ["8080"]
+        methods: ["GET"]
+        paths: ["/api/stock/*"]
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  hosts: [inventory.shop.svc.cluster.local]
+  http:
+  - timeout: 2s
+    retries:
+      attempts: 2
+      retryOn: 5xx
+    route:
+    - destination: {host: inventory.shop.svc.cluster.local}

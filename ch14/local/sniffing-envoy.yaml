@@ -1,0 +1,62 @@
+# The outbound listener that Istio builds for a port it must detect:
+# a TLS inspector and an HTTP inspector read the first bytes from the
+# client, then Envoy picks the HTTP filter chain or the TCP filter chain.
+# Port 17071 stands for the feed Service with the port name "feed".
+static_resources:
+  listeners:
+  - name: feed_auto_7070
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 17071 }
+    listener_filters:                                        # (1)
+    - name: envoy.filters.listener.tls_inspector
+      typed_config:
+        "@type": "type.googleapis.com/envoy.extensions.filters.listener.\
+          tls_inspector.v3.TlsInspector"
+    - name: envoy.filters.listener.http_inspector
+      typed_config:
+        "@type": "type.googleapis.com/envoy.extensions.filters.listener.\
+          http_inspector.v3.HttpInspector"
+    listener_filters_timeout: 0s                             # (2)
+    continue_on_listener_filters_timeout: true
+    filter_chains:
+    - filter_chain_match:                                    # (3)
+        transport_protocol: raw_buffer
+        application_protocols: ["http/1.1", "h2c"]
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: feed_http
+          route_config:
+            virtual_hosts:
+            - name: feed
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route: { cluster: feed }
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+                router.v3.Router"
+    - filters:                                               # (4)
+      - name: envoy.filters.network.tcp_proxy
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            tcp_proxy.v3.TcpProxy"
+          stat_prefix: feed_tcp
+          cluster: feed
+  clusters:
+  - name: feed
+    connect_timeout: 1s
+    load_assignment:
+      cluster_name: feed
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: 127.0.0.1, port_value: 17070 }
+admin:
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 19901 }

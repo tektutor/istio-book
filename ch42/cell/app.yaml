@@ -1,0 +1,96 @@
+# One cell's application and gateway, in the namespace you apply it to.
+# CELL_NAME is replaced by the cell's name, for example:
+#   sed s/CELL_NAME/cell-1/ ch42/cell/app.yaml | kubectl apply -n shop -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cell-app
+data:
+  app.py: |
+    import http.server, json, os
+    CELL = os.environ["CELL"]
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            body = json.dumps({"cell": CELL,
+                               "tenant": self.headers.get("x-tenant"),
+                               "pod": os.environ["HOSTNAME"]}).encode()
+            self.send_response(200)
+            self.send_header("content-type", "application/json")
+            self.send_header("content-length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    http.server.ThreadingHTTPServer(("", 8080), Handler).serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cell-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cell-app
+  template:
+    metadata:
+      labels:
+        app: cell-app
+        version: v1
+    spec:
+      containers:
+      - name: cell-app
+        image: python:3.13-slim
+        command: ["python", "/app/app.py"]
+        env:
+        - name: CELL
+          value: CELL_NAME
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+        volumeMounts:
+        - name: app
+          mountPath: /app
+      volumes:
+      - name: app
+        configMap:
+          name: cell-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cell-app
+spec:
+  selector:
+    app: cell-app
+  ports:
+  - name: http
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: cell-gw
+spec:
+  gatewayClassName: istio
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cell-app
+spec:
+  parentRefs:
+  - name: cell-gw
+  rules:
+  - backendRefs:
+    - name: cell-app
+      port: 8080

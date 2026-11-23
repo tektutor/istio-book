@@ -1,0 +1,13 @@
+# A DestinationRule that sets only connectionPool. With the mesh baseline
+# from Lab 17.2, orders keeps the mesh's outlierDetection.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: orders
+  namespace: shop
+spec:
+  host: orders
+  trafficPolicy:
+    connectionPool:
+      http:
+        http1MaxPendingRequests: 32

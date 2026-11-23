@@ -1,0 +1,23 @@
+# ch10/mesh/istio.yaml with the ambient profile. Sidecar projects keep
+# working after the update.
+apiVersion: sailoperator.io/v1
+kind: Istio
+metadata:
+  name: default
+spec:
+  namespace: istio-system
+  version: v1.30.5
+  profile: ambient                          # (1)
+  updateStrategy:
+    type: InPlace
+  values:
+    pilot:
+      trustedZtunnelNamespace: ztunnel      # (2)
+      resources:
+        requests:
+          cpu: 200m
+          memory: 512Mi
+    meshConfig:
+      discoverySelectors:
+      - matchLabels:
+          istio-discovery: enabled

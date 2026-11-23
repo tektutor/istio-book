@@ -1,0 +1,27 @@
+# Jason sees reviews v2, which calls ratings with a 10-second timeout.
+# Everybody else sees v1, which does not call ratings at all.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: reviews
+  namespace: bookinfo
+spec:
+  hosts:
+  - reviews
+  http:
+  - name: melissa
+    match:
+    - headers:
+        end-user:
+          exact: melissa
+    route:
+    - destination:
+        host: reviews-v2                           # (1)
+        port:
+          number: 9080
+  - name: everyone-else
+    route:
+    - destination:
+        host: reviews-v1
+        port:
+          number: 9080

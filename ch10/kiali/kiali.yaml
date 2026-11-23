@@ -1,0 +1,37 @@
+# Kiali reads metrics from OpenShift monitoring through the Thanos
+# querier, with the token of its own service account.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kiali-monitoring-rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view             # (1)
+subjects:
+- kind: ServiceAccount
+  name: kiali-service-account
+  namespace: istio-system
+---
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali
+  namespace: istio-system
+spec:
+  external_services:
+    prometheus:
+      auth:
+        type: bearer
+        use_kiali_token: true               # (2)
+      thanos_proxy:
+        enabled: true
+      url: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091
+---
+apiVersion: kiali.io/v1alpha1
+kind: OSSMConsole                           # (3)
+metadata:
+  name: ossmconsole
+  namespace: openshift-operators
+spec:
+  version: default

@@ -1,0 +1,62 @@
+# Two client pods with the stock image, which contains client.py and
+# watch.py. One has a sidecar; the other has none, so its calls reach
+# the stock pods through the plain Kubernetes Service.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stock-client
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stock-client
+  template:
+    metadata:
+      labels:
+        app: stock-client
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: client
+        image: tektutor/stock:1.0
+        imagePullPolicy: IfNotPresent
+        command: ["sleep", "infinity"]              # (1)
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stock-client-nomesh
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stock-client-nomesh
+  template:
+    metadata:
+      labels:
+        app: stock-client-nomesh
+      annotations:
+        sidecar.istio.io/inject: "false"            # (2)
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: client
+        image: tektutor/stock:1.0
+        imagePullPolicy: IfNotPresent
+        command: ["sleep", "infinity"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]

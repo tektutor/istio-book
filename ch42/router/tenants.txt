@@ -1,0 +1,13 @@
+# tenant     home cell
+acme         cell-1
+globex       cell-1
+initech      cell-1
+umbrella     cell-1
+hooli        cell-2
+stark        cell-2
+wayne        cell-2
+wonka        cell-2
+tyrell       cell-3
+cyberdyne    cell-3
+soylent      cell-3
+oscorp       cell-3

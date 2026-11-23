@@ -1,0 +1,22 @@
+# The same rule for a waypoint: targetRefs binds the policy to the
+# reviews Service, and the waypoint of the namespace enforces it.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: reviews-get-only
+  namespace: bookinfo
+spec:
+  targetRefs:                                                  # (1)
+  - kind: Service
+    group: ""
+    name: reviews
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - tektutor.org/ns/bookinfo/sa/bookinfo-productpage
+        - cluster.local/ns/bookinfo/sa/bookinfo-productpage
+    to:
+    - operation:
+        methods: ["GET"]

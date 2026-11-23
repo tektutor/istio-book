@@ -1,0 +1,50 @@
+# ch15/inference/gateway-and-route.yaml for OpenShift Local: the gateway's
+# Service gets the type ClusterIP, and a plain HTTP Route brings requests
+# for models.apps-crc.testing from the OpenShift router to it.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: inference
+  namespace: models
+  annotations:
+    networking.istio.io/service-type: ClusterIP      # OpenShift Local only
+spec:
+  gatewayClassName: istio
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: sim-model
+  namespace: models
+spec:
+  parentRefs:
+  - name: inference
+    sectionName: http
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /v1/
+    backendRefs:
+    - group: inference.networking.k8s.io
+      kind: InferencePool
+      name: sim-model
+    timeouts:
+      request: 300s
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: inference
+  namespace: models
+spec:
+  host: models.apps-crc.testing
+  to:
+    kind: Service
+    name: inference-istio
+  port:
+    targetPort: http

@@ -1,0 +1,8 @@
+# Expected result: denied by guardrail 1.
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: add-header
+  namespace: shop
+spec:
+  configPatches: []

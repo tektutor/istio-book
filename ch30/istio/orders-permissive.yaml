@@ -1,0 +1,13 @@
+# An exception for one workload: orders accepts plain text as well,
+# while the rest of the namespace stays STRICT.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: orders
+  namespace: shop
+spec:
+  selector:                                                    # (1)
+    matchLabels:
+      app: orders
+  mtls:
+    mode: PERMISSIVE

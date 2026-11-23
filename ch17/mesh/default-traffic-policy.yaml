@@ -1,0 +1,20 @@
+# A mesh-wide baseline for every outbound cluster (Istio 1.31). Apply it
+# on top of the lab installation:
+#   istioctl install -f ch13/istio/lab-install-ambient.yaml \
+#     -f ch17/mesh/default-traffic-policy.yaml
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  meshConfig:
+    defaultTrafficPolicy:
+      connectionPool:                              # (1)
+        tcp:
+          connectTimeout: 2s
+        http:
+          http1MaxPendingRequests: 256
+          idleTimeout: 300s
+      outlierDetection:                            # (2)
+        consecutive5xxErrors: 5
+        interval: 10s
+        baseEjectionTime: 30s
+        maxEjectionPercent: 50

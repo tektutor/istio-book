@@ -1,0 +1,39 @@
+# Unit test for the mutual TLS share query in ../mesh_coverage.py, run with
+#   promtool test rules mtls-share-test.yaml
+# shop receives 18 requests over mutual TLS and 2 in plain text every 15
+# seconds, from a client without a sidecar: 90% mutual TLS. The two
+# tests check that the result lies between 89.99% and 90.01%.
+rule_files: []
+evaluation_interval: 15s
+tests:
+- interval: 15s
+  input_series:
+  - series: 'istio_requests_total{reporter="destination",
+      destination_workload_namespace="shop",
+      connection_security_policy="mutual_tls"}'
+    values: '0+18x40'
+  - series: 'istio_requests_total{reporter="destination",
+      destination_workload_namespace="shop",
+      connection_security_policy="none"}'
+    values: '0+2x40'
+  promql_expr_test:
+  - expr: |
+      sum by (destination_workload_namespace) (rate(istio_requests_total{
+        reporter="destination",connection_security_policy="mutual_tls"}[1h]))
+      / sum by (destination_workload_namespace)
+        (rate(istio_requests_total{reporter="destination"}[1h]))
+      * 100 > bool 89.99
+    eval_time: 10m
+    exp_samples:
+    - labels: '{destination_workload_namespace="shop"}'
+      value: 1
+  - expr: |
+      sum by (destination_workload_namespace) (rate(istio_requests_total{
+        reporter="destination",connection_security_policy="mutual_tls"}[1h]))
+      / sum by (destination_workload_namespace)
+        (rate(istio_requests_total{reporter="destination"}[1h]))
+      * 100 < bool 90.01
+    eval_time: 10m
+    exp_samples:
+    - labels: '{destination_workload_namespace="shop"}'
+      value: 1

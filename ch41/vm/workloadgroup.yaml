@@ -1,0 +1,31 @@
+# The template for virtual machines that serve "where" in the namespace
+# zones. Each VM that connects with this group's token gets its own
+# WorkloadEntry, which the Service "where" selects by its labels.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: where-vm
+  namespace: zones
+---
+apiVersion: networking.istio.io/v1
+kind: WorkloadGroup
+metadata:
+  name: where-vm
+  namespace: zones
+spec:
+  metadata:
+    labels:
+      app: where                          # (1)
+      version: vm
+      istio-locality: lab.zone-a          # (5)
+  template:
+    serviceAccount: where-vm              # (2)
+    locality: lab/zone-a                  # (3)
+    ports:
+      http: 8080
+  probe:                                  # (4)
+    periodSeconds: 5
+    initialDelaySeconds: 1
+    httpGet:
+      port: 8080
+      path: /

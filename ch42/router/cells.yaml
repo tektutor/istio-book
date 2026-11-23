@@ -1,0 +1,71 @@
+# The three cells as the router sees them: the address of each cell's
+# gateway, and a second cell as the backup of each one.
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: cell-1
+  namespace: router
+spec:
+  hosts: [cell-1.cells.internal]
+  location: MESH_EXTERNAL
+  resolution: STATIC
+  ports:
+  - {number: 80, name: http, protocol: HTTP}
+  endpoints:
+  - address: CELL1_GW                                       # (1)
+    labels: {role: primary}
+  - address: CELL2_GW
+    labels: {role: backup}                                  # (2)
+---
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: cell-2
+  namespace: router
+spec:
+  hosts: [cell-2.cells.internal]
+  location: MESH_EXTERNAL
+  resolution: STATIC
+  ports:
+  - {number: 80, name: http, protocol: HTTP}
+  endpoints:
+  - address: CELL2_GW
+    labels: {role: primary}
+  - address: CELL3_GW
+    labels: {role: backup}
+---
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: cell-3
+  namespace: router
+spec:
+  hosts: [cell-3.cells.internal]
+  location: MESH_EXTERNAL
+  resolution: STATIC
+  ports:
+  - {number: 80, name: http, protocol: HTTP}
+  endpoints:
+  - address: CELL3_GW
+    labels: {role: primary}
+  - address: CELL1_GW
+    labels: {role: backup}
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: cells
+  namespace: router
+spec:
+  host: "*.cells.internal"
+  trafficPolicy:
+    loadBalancer:
+      localityLbSetting:
+        enabled: true
+        failoverPriority:
+        - role=primary                                      # (3)
+    outlierDetection:                                       # (4)
+      consecutive5xxErrors: 3
+      interval: 5s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 100

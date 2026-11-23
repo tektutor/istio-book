@@ -1,0 +1,40 @@
+# A client outside the mesh: a namespace without sidecar injection or
+# ambient mode, with a curl pod in it.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: legacy                                                 # (1)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: curl
+  namespace: legacy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: curl
+  template:
+    metadata:
+      labels:
+        app: curl
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: curl
+        image: docker.io/curlimages/curl:8.16.0
+        command: ["sleep", "infinity"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi

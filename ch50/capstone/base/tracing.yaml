@@ -1,0 +1,9 @@
+# R4: trace 10% of the shop's requests. Only the tracing section is set;
+# access logs and metrics come from the mesh-wide Telemetry of Chapter 35.
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: shop-tracing
+spec:
+  tracing:
+  - randomSamplingPercentage: 10

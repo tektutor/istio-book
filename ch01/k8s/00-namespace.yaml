@@ -1,0 +1,6 @@
+# The shop namespace for Chapter 1. It has no mesh labels, so the
+# pods in it run without any proxy.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shop

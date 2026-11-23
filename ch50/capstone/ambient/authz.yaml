@@ -1,0 +1,67 @@
+# R3 and R5 in ambient mode. The HTTP rules move to the waypoint with
+# targetRefs; ztunnel enforces the rules without targetRefs.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-nothing-waypoint
+spec:
+  targetRefs:                                                  # (1)
+  - {kind: Gateway, group: gateway.networking.k8s.io, name: waypoint}
+  action: ALLOW
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-waypoint
+spec:
+  action: ALLOW
+  rules:
+  - from:
+    - source:                                                  # (2)
+        principals: [cluster.local/ns/shop/sa/waypoint]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: inventory-allow
+spec:
+  targetRefs:
+  - {kind: Service, group: "", name: inventory}
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/shop/sa/orders
+        - cluster.local/ns/shop/sa/cart
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/stock/*"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: orders-allow
+spec:
+  targetRefs:
+  - {kind: Service, group: "", name: orders}
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: [cluster.local/ns/ingress/sa/public-istio]
+        requestPrincipals: ["*"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/orders/*"]
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/shop/sa/curl
+        - cluster.local/ns/shop/sa/default
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/orders/*"]

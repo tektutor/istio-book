@@ -1,0 +1,17 @@
+# A new cart pod is a cold JVM: its first requests are slow while the
+# code is compiled. Warmup sends it a growing share of the traffic over
+# the first two minutes instead of a full share at once.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: cart
+  namespace: shop
+spec:
+  host: cart
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_REQUEST                        # (1)
+      warmup:
+        duration: 120s                             # (2)
+        minimumPercent: 10
+        aggression: 1.0

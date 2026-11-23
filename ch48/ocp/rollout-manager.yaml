@@ -1,0 +1,9 @@
+# Argo Rollouts on OpenShift: the OpenShift GitOps operator installs the
+# controller when you create a RolloutManager. Without namespaceScoped,
+# the controller manages Rollouts in every namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: RolloutManager
+metadata:
+  name: argo-rollouts
+  namespace: openshift-gitops
+spec: {}

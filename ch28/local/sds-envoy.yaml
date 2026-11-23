@@ -1,0 +1,43 @@
+# The inbound side of the orders sidecar, with its certificate and its
+# trusted roots from SDS, under the names that istio-agent uses:
+#   default  the workload's key and certificate chain
+#   ROOTCA   the roots that a peer's certificate must chain to
+# istio-agent serves SDS over a Unix socket; this stand-in reads the
+# same two secrets from files that the demo rewrites.
+node:                                                         # (3)
+  id: sidecar~127.0.0.1~orders-1.shop~shop.svc.cluster.local
+  cluster: orders.shop
+static_resources:
+  listeners:
+  - name: inbound_mtls
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18600 }
+    filter_chains:
+    - transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.\
+            v3.DownstreamTlsContext"
+          require_client_certificate: true
+          common_tls_context:
+            tls_certificate_sds_secret_configs:                       # (1)
+            - name: default
+              sds_config:
+                path_config_source:
+                  path: /tmp/ch28-sds/default.yaml
+                  watched_directory: { path: /tmp/ch28-sds }
+            validation_context_sds_secret_config:                     # (2)
+              name: ROOTCA
+              sds_config:
+                path_config_source:
+                  path: /tmp/ch28-sds/ROOTCA.yaml
+                  watched_directory: { path: /tmp/ch28-sds }
+      filters:
+      - name: envoy.filters.network.direct_response
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            direct_response.v3.Config"
+          response: { inline_string: "hello from orders\n" }
+admin:
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 19930 }

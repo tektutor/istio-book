@@ -1,0 +1,40 @@
+# A time-boxed chaos experiment on inventory: for requests that carry
+# the header x-chaos-test, 10 percent wait one extra second and
+# 5 percent fail with 503. Other requests are not touched.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: inventory
+  namespace: shop
+  annotations:
+    tektutor.org/experiment: "inventory-latency-01"   # (1)
+    tektutor.org/expires: "2026-11-30T18:00:00+05:30"
+spec:
+  hosts:
+  - inventory
+  http:
+  - name: chaos
+    match:
+    - headers:
+        x-chaos-test:
+          exact: "true"                            # (2)
+    fault:
+      delay:
+        fixedDelay: 1s
+        percentage:
+          value: 10
+      abort:
+        httpStatus: 503
+        percentage:
+          value: 5                                 # (3)
+    route:
+    - destination:
+        host: inventory
+        port:
+          number: 8080
+  - name: everyone-else
+    route:
+    - destination:
+        host: inventory
+        port:
+          number: 8080

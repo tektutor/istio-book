@@ -1,0 +1,39 @@
+# Ambient mode for cluster1 of a multi-primary mesh on two networks:
+# the ambient installation of Chapter 13, the multi-cluster values, and
+# the two istiod settings that ambient multicluster needs.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: cluster1
+  namespace: istio-system
+spec:
+  profile: ambient                    # (1)
+  components:
+    pilot:
+      k8s:
+        env:
+        - name: AMBIENT_ENABLE_MULTI_NETWORK       # (2)
+          value: "true"
+        - name: AMBIENT_ENABLE_BAGGAGE             # (3)
+          value: "true"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+  values:
+    ztunnel:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+    global:
+      meshID: mesh1
+      multiCluster:
+        clusterName: cluster1
+      network: network1
+      platform: minikube              # (4)
+      proxy:
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi

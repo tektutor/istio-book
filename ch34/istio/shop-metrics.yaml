@@ -1,0 +1,29 @@
+# Metrics settings for the shop namespace. They add to the mesh-wide
+# Telemetry resource mesh-default; they do not replace it.
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: shop-metrics
+  namespace: shop
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+    overrides:
+    - match:                                                     # (1)
+        metric: REQUEST_SIZE
+        mode: CLIENT_AND_SERVER
+      disabled: true
+    - match:
+        metric: RESPONSE_SIZE
+        mode: CLIENT_AND_SERVER
+      disabled: true
+    - match:                                                     # (2)
+        metric: REQUEST_COUNT
+        mode: CLIENT_AND_SERVER
+      tagOverrides:
+        api:
+          value: >-
+            request.url_path.startsWith('/api/stock/') ? 'stock' :
+            request.url_path.startsWith('/api/orders/') ? 'orders' :
+            'other'

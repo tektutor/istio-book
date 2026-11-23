@@ -1,0 +1,16 @@
+# Settings for a root rotation without restarts, on top of the lab
+# installation:
+#   istioctl install -f ch13/istio/lab-install-ambient.yaml \
+#     -f ch29/istio/multiroot.yaml -y
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  meshConfig:
+    defaultConfig:
+      proxyMetadata:
+        PROXY_CONFIG_XDS_AGENT: "true"                         # (1)
+        SECRET_TTL: 10m                                        # (2)
+  values:
+    pilot:
+      env:
+        ISTIO_MULTIROOT_MESH: "true"                           # (3)

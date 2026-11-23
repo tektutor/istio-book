@@ -1,0 +1,11 @@
+# R4: the first proxy on a request's path decides whether it is traced.
+# Customer requests start at the public gateway in the namespace
+# ingress, so the gateway's namespace needs the 10% rate too.
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: gateway-tracing
+  namespace: ingress
+spec:
+  tracing:
+  - randomSamplingPercentage: 10

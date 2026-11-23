@@ -1,0 +1,40 @@
+# Beta testers, marked by the header x-beta: true, get inventory v2.
+# Everybody else gets v1. Inventory v2 is the Deployment of Chapter 18.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: inventory
+  namespace: shop
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  host: inventory.shop.svc.cluster.local
+  subsets:
+  - name: v1
+    labels: {version: v1}
+  - name: v2
+    labels: {version: v2}
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: inventory
+  namespace: shop
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"   # after the subsets
+spec:
+  hosts:
+  - inventory.shop.svc.cluster.local
+  http:
+  - match:
+    - headers:
+        x-beta:
+          exact: "true"
+    route:
+    - destination:
+        host: inventory.shop.svc.cluster.local
+        subset: v2
+  - route:
+    - destination:
+        host: inventory.shop.svc.cluster.local
+        subset: v1

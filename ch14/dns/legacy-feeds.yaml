@@ -1,0 +1,95 @@
+# Two old price feeds that run outside the mesh, in the namespace
+# "legacy", which has no injection label. In this lab they stand for
+# servers outside the cluster, such as a partner's systems.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: legacy
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feed-a
+  namespace: legacy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feed-a
+  template:
+    metadata:
+      labels:
+        app: feed-a
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: feed
+        image: tektutor/feed:1.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: FEED_NAME
+          value: feed-a
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feed-a
+  namespace: legacy
+spec:
+  selector:
+    app: feed-a
+  ports:
+  - name: tcp-feed
+    port: 7070
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feed-b
+  namespace: legacy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feed-b
+  template:
+    metadata:
+      labels:
+        app: feed-b
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: feed
+        image: tektutor/feed:1.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: FEED_NAME
+          value: feed-b
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feed-b
+  namespace: legacy
+spec:
+  selector:
+    app: feed-b
+  ports:
+  - name: tcp-feed
+    port: 7070

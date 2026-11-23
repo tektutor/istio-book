@@ -1,0 +1,48 @@
+# The curl pod from Chapter 8, with one change: its sidecar keeps the
+# Envoy counters for requests, retries and timeouts, which Istio drops
+# by default. Applying this file replaces the Chapter 8 Deployment.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: curl
+  namespace: shop
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: curl
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: curl
+  template:
+    metadata:
+      labels:
+        app: curl
+        version: v1
+      annotations:
+        proxy.istio.io/config: |      # (1)
+          proxyStatsMatcher:
+            inclusionRegexps:
+            - ".*upstream_rq_(total|retry|timeout|per_try_timeout).*"
+    spec:
+      serviceAccountName: curl
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: curl
+        image: docker.io/curlimages/curl:8.16.0
+        command: ["sleep", "infinity"]   # (2)
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi

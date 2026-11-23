@@ -1,0 +1,161 @@
+# The Envoy configuration of productpage in zone-a for ratings, built from
+# istiod 1.31.1's output: zoneAwareLbSetting with the default minimum cluster size.
+# Pod addresses are replaced by the loopback addresses of backends.py.
+node:
+  id: productpage-a
+  cluster: productpage
+  locality:
+    region: lab
+    zone: zone-a
+admin:
+  address:
+    socket_address:
+      address: 127.0.0.1
+      port_value: 18701
+cluster_manager:
+  local_cluster_name: local_cluster
+static_resources:
+  listeners:
+  - name: l
+    address:
+      socket_address:
+        address: 127.0.0.1
+        port_value: 18700
+    filter_chains:
+    - filters:
+      - name: hcm
+        typed_config:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: l
+          route_config:
+            virtual_hosts:
+            - name: v
+              domains:
+              - '*'
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: ratings
+                  timeout: 5s
+                  retry_policy:
+                    retryOn: connect-failure,refused-stream,unavailable,cancelled,retriable-status-codes
+                    numRetries: 2
+                    retryHostPredicate:
+                    - name: envoy.retry_host_predicates.previous_hosts
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.retry.host.previous_hosts.v3.PreviousHostsPredicate
+                    hostSelectionRetryMaxAttempts: '5'
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+  clusters:
+  - name: ratings
+    type: STATIC
+    connect_timeout: 1s
+    lb_policy: LEAST_REQUEST
+    common_lb_config:
+      healthyPanicThreshold: {}
+      zoneAwareLbConfig: {}
+    load_assignment:
+      endpoints:
+      - locality:
+          region: dr
+          zone: dr-a
+        lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.14
+                portValue: 9080
+          healthStatus: HEALTHY
+          loadBalancingWeight: 1
+        loadBalancingWeight: 1
+        priority: 1
+      - locality:
+          region: lab
+          zone: zone-a
+        lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.11
+                portValue: 9080
+          healthStatus: HEALTHY
+          loadBalancingWeight: 1
+        loadBalancingWeight: 1
+      - locality:
+          region: lab
+          zone: zone-b
+        lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.12
+                portValue: 9080
+          healthStatus: HEALTHY
+          loadBalancingWeight: 1
+        loadBalancingWeight: 1
+      - locality:
+          region: lab
+          zone: zone-c
+        lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.13
+                portValue: 9080
+          healthStatus: HEALTHY
+          loadBalancingWeight: 1
+        loadBalancingWeight: 1
+      cluster_name: ratings
+    outlier_detection:
+      consecutive5xx: 3
+      interval: 5s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 100
+      enforcingConsecutive5xx: 100
+      enforcingSuccessRate: 0
+  - name: local_cluster
+    type: STATIC
+    connect_timeout: 1s
+    load_assignment:
+      endpoints:
+      - locality:
+          region: lab
+          zone: zone-a
+        lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.21
+                portValue: 9080
+          healthStatus: HEALTHY
+          loadBalancingWeight: 1
+        loadBalancingWeight: 1
+      - locality:
+          region: lab
+          zone: zone-b
+        lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.22
+                portValue: 9080
+          healthStatus: HEALTHY
+          loadBalancingWeight: 1
+        loadBalancingWeight: 1
+      - locality:
+          region: lab
+          zone: zone-c
+        lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.23
+                portValue: 9080
+          healthStatus: HEALTHY
+          loadBalancingWeight: 1
+        loadBalancingWeight: 1
+      cluster_name: local_cluster

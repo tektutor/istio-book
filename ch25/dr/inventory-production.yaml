@@ -1,0 +1,28 @@
+# A starting point for production: limits that only an overloaded
+# service reaches, and outlier detection that reacts within seconds.
+# Measure your service and adjust every number.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  host: inventory
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 200
+        connectTimeout: 2s
+      http:
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 500
+        maxRetries: 50                    # (1)
+    outlierDetection:
+      consecutive5xxErrors: 5
+      consecutiveGatewayErrors: 3         # (2)
+      interval: 5s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50              # (3)
+    retryBudget:
+      percent: 20
+      minRetryConcurrency: 3

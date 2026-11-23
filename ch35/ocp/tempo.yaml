@@ -1,0 +1,27 @@
+# OpenShift only: the Tempo Operator of the Red Hat build of the distributed
+# tracing platform, and one TempoMonolithic instance for the lab. It keeps
+# traces in memory, takes OTLP on 4317 (gRPC) and 4318 (HTTP), and serves
+# the Jaeger UI through a Route.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-tempo-operator
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: openshift-tempo-operator
+  namespace: openshift-tempo-operator
+spec: {}                                                       # (1)
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: tempo-product
+  namespace: openshift-tempo-operator
+spec:
+  name: tempo-product
+  channel: stable
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Automatic

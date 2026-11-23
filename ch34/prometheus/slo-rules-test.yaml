@@ -1,0 +1,74 @@
+# Unit tests for slo-rules.yaml. Run: promtool test rules this file.
+# inventory gets 10 requests per second. Series values use Prometheus's
+# expanding notation: "0+600x120" starts at 0 and adds 600 per minute.
+rule_files:
+- slo-rules.yaml
+evaluation_interval: 1m
+tests:
+- name: 10% errors for two hours page                            # (1)
+  interval: 1m
+  input_series:
+  - series: 'istio_requests_total{reporter="source",response_code="200",
+      destination_service_namespace="shop",
+      destination_service_name="inventory"}'
+    values: '0+540x120'
+  - series: 'istio_requests_total{reporter="source",response_code="503",
+      destination_service_namespace="shop",
+      destination_service_name="inventory"}'
+    values: '0+60x120'
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: ErrorBudgetFastBurn
+    exp_alerts:
+    - exp_labels:
+        severity: page
+        destination_service_namespace: shop
+        destination_service_name: inventory
+      exp_annotations:
+        summary: >-
+          inventory uses its 30-day error budget 14.4 times too fast: 2%
+          of it in one hour
+- name: 1% errors for two hours do not page                      # (2)
+  interval: 1m
+  input_series:
+  - series: 'istio_requests_total{reporter="source",response_code="200",
+      destination_service_namespace="shop",
+      destination_service_name="inventory"}'
+    values: '0+594x120'
+  - series: 'istio_requests_total{reporter="source",response_code="503",
+      destination_service_namespace="shop",
+      destination_service_name="inventory"}'
+    values: '0+6x120'
+  alert_rule_test:
+  - eval_time: 2h
+    alertname: ErrorBudgetFastBurn
+    exp_alerts: []
+  - eval_time: 2h
+    alertname: ErrorBudgetSlowBurn
+    exp_alerts: []
+- name: 5% errors page only through the slow burn                # (3)
+  interval: 1m
+  input_series:
+  - series: 'istio_requests_total{reporter="source",response_code="200",
+      destination_service_namespace="shop",
+      destination_service_name="inventory"}'
+    values: '0+570x120'
+  - series: 'istio_requests_total{reporter="source",response_code="503",
+      destination_service_namespace="shop",
+      destination_service_name="inventory"}'
+    values: '0+30x120'
+  alert_rule_test:
+  - eval_time: 1h
+    alertname: ErrorBudgetFastBurn
+    exp_alerts: []
+  - eval_time: 1h
+    alertname: ErrorBudgetSlowBurn
+    exp_alerts:
+    - exp_labels:
+        severity: page
+        destination_service_namespace: shop
+        destination_service_name: inventory
+      exp_annotations:
+        summary: >-
+          inventory uses its 30-day error budget 6 times too fast: 5% of
+          it in six hours

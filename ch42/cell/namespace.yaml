@@ -1,0 +1,9 @@
+# The namespace of a cell's application on Kubernetes, where each cell
+# is a cluster of its own.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shop
+  labels:
+    istio-injection: enabled
+    tektutor.org/cell: CELL_NAME

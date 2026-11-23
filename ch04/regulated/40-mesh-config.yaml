@@ -1,0 +1,6 @@
+# Helm values for istiod (chart "istiod"): block calls to hosts that
+# are not in the service registry, and log in JSON for the log store.
+meshConfig:
+  outboundTrafficPolicy:
+    mode: REGISTRY_ONLY        # (1)
+  accessLogEncoding: JSON      # (2)

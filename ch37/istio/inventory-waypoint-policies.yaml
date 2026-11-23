@@ -1,0 +1,41 @@
+# The inventory policies of Chapter 31, rewritten for ambient mode. They
+# check paths and methods, so they move from a selector to targetRefs,
+# and the shop's waypoint enforces them.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: inventory-deny-admin-waypoint
+  namespace: shop
+spec:
+  targetRefs:
+  - kind: Service                                              # (1)
+    group: ""
+    name: inventory
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        ports: ["8080"]                                        # (2)
+        paths: ["/admin/*"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: inventory-allow-waypoint
+  namespace: shop
+spec:
+  targetRefs:
+  - kind: Service
+    group: ""
+    name: inventory
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - tektutor.org/ns/shop/sa/orders                       # (3)
+        - tektutor.org/ns/shop/sa/cart
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/stock/*"]

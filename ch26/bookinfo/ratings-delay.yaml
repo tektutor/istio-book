@@ -1,0 +1,32 @@
+# A 5-second delay on every call to ratings for melissa, and no change
+# for anybody else.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: ratings
+  namespace: bookinfo
+spec:
+  hosts:
+  - ratings
+  http:
+  - name: melissa-delay
+    match:
+    - headers:
+        end-user:
+          exact: melissa                             # (1)
+    fault:
+      delay:
+        fixedDelay: 5s                             # (2)
+        percentage:
+          value: 100                               # (3)
+    route:
+    - destination:
+        host: ratings
+        port:
+          number: 9080
+  - name: everyone-else
+    route:
+    - destination:
+        host: ratings
+        port:
+          number: 9080

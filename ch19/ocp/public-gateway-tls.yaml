@@ -1,0 +1,56 @@
+# ch19/gateway/public-gateway-tls.yaml for OpenShift Local. Two changes:
+# the Service gets the type ClusterIP, because the OpenShift router sits in
+# front of it, and the EDGE profile is left out, because OpenShift Service
+# Mesh 3.4 is based on Istio 1.30, which does not have connectionSettings.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: public
+  namespace: ingress
+  annotations:
+    networking.istio.io/service-type: ClusterIP      # OpenShift Local only
+spec:
+  gatewayClassName: istio
+  infrastructure:
+    parametersRef:
+      group: ""
+      kind: ConfigMap
+      name: public-gateway-options
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            tektutor.org/ingress: allowed
+  - name: shop-https
+    port: 443
+    protocol: HTTPS
+    hostname: shop.tektutor.test
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: shop-tls
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            tektutor.org/ingress: allowed
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: public-gateway-options
+  namespace: ingress
+data:
+  horizontalPodAutoscaler: |
+    spec:
+      minReplicas: 2
+      maxReplicas: 5
+  podDisruptionBudget: |
+    spec:
+      minAvailable: 1

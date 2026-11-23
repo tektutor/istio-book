@@ -1,0 +1,21 @@
+# The managed PostgreSQL database that the orders service will use in
+# production. It lives outside the cluster, at a fixed address range,
+# and speaks a protocol that the proxy cannot read.
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: orders-db
+  namespace: shop
+spec:
+  hosts:
+  - orders-db.tektutor.test         # (1)
+  addresses:
+  - 10.40.12.0/28                       # (2)
+  location: MESH_EXTERNAL
+  ports:
+  - number: 5432
+    name: tcp-postgres
+    protocol: TCP                       # (3)
+  resolution: NONE                      # (4)
+  exportTo:
+  - "."

@@ -1,0 +1,33 @@
+// The part of Envoy's rate limit service API that a minimal service
+// needs. Package, service and field numbers match Envoy's own
+// envoy/service/ratelimit/v3/rls.proto, so Envoy can call it.
+syntax = "proto3";
+
+package envoy.service.ratelimit.v3;
+
+service RateLimitService {
+  rpc ShouldRateLimit(RateLimitRequest) returns (RateLimitResponse);
+}
+
+message RateLimitRequest {
+  string domain = 1;
+  repeated RateLimitDescriptor descriptors = 2;
+  uint32 hits_addend = 3;
+}
+
+message RateLimitDescriptor {
+  message Entry {
+    string key = 1;
+    string value = 2;
+  }
+  repeated Entry entries = 1;
+}
+
+message RateLimitResponse {
+  enum Code {
+    UNKNOWN = 0;
+    OK = 1;
+    OVER_LIMIT = 2;
+  }
+  Code overall_code = 1;
+}

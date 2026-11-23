@@ -1,0 +1,9 @@
+# The pods of the local ambient lab, one per line:
+# name         namespace node     IP          service account      role
+curl           bookinfo  lab      10.244.1.5  curl                 client
+productpage-v1 bookinfo  lab      10.244.1.10 bookinfo-productpage productpage:v1
+reviews-v1     bookinfo  lab      10.244.1.11 bookinfo-reviews     reviews:v1
+reviews-v2     bookinfo  lab-m02  10.244.2.11 bookinfo-reviews     reviews:v2
+ratings-v1     bookinfo  lab-m02  10.244.2.12 bookinfo-ratings     ratings:v1
+waypoint       bookinfo  lab-m02  10.244.2.20 waypoint             waypoint
+waypoint-v2    bookinfo  lab      10.244.1.20 waypoint-v2          waypoint

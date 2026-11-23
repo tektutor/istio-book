@@ -1,0 +1,22 @@
+# Rejects every request at the cell router without a valid token, or
+# with a token that has no tenant claim: the RequestAuthentication alone
+# lets requests without a token through, and a token without the claim
+# would leave a client's own x-tenant header in place.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: require-jwt
+  namespace: router
+spec:
+  targetRefs:
+  - kind: Gateway
+    group: gateway.networking.k8s.io
+    name: cell-router
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        requestPrincipals: ["*"]                            # (1)
+    when:
+    - key: request.auth.claims[tenant]                      # (2)
+      values: ["*"]

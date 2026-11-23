@@ -1,0 +1,18 @@
+# Fixed shares instead of failover: callers in zone-a send 80% of their
+# calls to zone-a and 20% to zone-b, and none to the other zones.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: ratings
+  namespace: bookinfo
+spec:
+  host: ratings.bookinfo.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      localityLbSetting:
+        enabled: true
+        distribute:
+        - from: lab/zone-a/*              # (1)
+          to:
+            "lab/zone-a/*": 80
+            "lab/zone-b/*": 20

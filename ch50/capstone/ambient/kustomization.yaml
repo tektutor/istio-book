@@ -1,0 +1,13 @@
+# The capstone in ambient mode: a waypoint for the shop, policies and
+# JWT checks on the waypoint, and an HTTPRoute for the release.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: shop
+resources:
+- ../base
+- waypoint.yaml
+- authz.yaml
+- jwt.yaml
+- inventory-route.yaml
+patches:
+- path: rollout-routing.yaml

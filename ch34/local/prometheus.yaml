@@ -1,0 +1,16 @@
+# Prometheus for the local demo: it scrapes the two sidecars every two
+# seconds, where the lab's Prometheus scrapes every 15 seconds, so that
+# a short demo has enough samples. The rules are the ones in Lab 34.1.
+global:
+  scrape_interval: 2s
+  evaluation_interval: 2s
+rule_files:
+- ../prometheus/slo-rules.yaml
+scrape_configs:
+- job_name: kubernetes-pods
+  metrics_path: /stats/prometheus
+  static_configs:
+  - targets: ["127.0.0.1:19970"]
+    labels: { namespace: shop, pod: orders-6d4f9-x7k2p, app: orders }
+  - targets: ["127.0.0.1:19971"]
+    labels: { namespace: shop, pod: inventory-5b8c7-q9w4z, app: inventory }

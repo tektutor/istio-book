@@ -1,0 +1,10 @@
+# Mutual TLS between proxies with TLS 1.3 only, on top of the lab
+# installation:
+#   istioctl install -f ch13/istio/lab-install-ambient.yaml \
+#     -f ch29/istio/trust-domain.yaml -f ch30/istio/mesh-tls13.yaml -y
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  meshConfig:
+    meshMTLS:
+      minProtocolVersion: TLSV1_3                              # (1)

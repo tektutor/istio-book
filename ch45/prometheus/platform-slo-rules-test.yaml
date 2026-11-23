@@ -1,0 +1,39 @@
+# Unit tests for platform-slo-rules.yaml:
+#   promtool test rules ch45/prometheus/platform-slo-rules-test.yaml
+rule_files: [platform-slo-rules.yaml]
+evaluation_interval: 1m
+tests:
+- interval: 1m
+  input_series:                                                 # (1)
+  - series: 'pilot_proxy_convergence_time_count'
+    values: '0+100x90'
+  - series: 'pilot_proxy_convergence_time_bucket{le="5.0"}'
+    values: '0+100x30 3080+80x59'
+  - series: 'pilot_proxy_convergence_time_bucket{le="+Inf"}'
+    values: '0+100x90'
+  - series: 'pilot_total_xds_rejects{type="lds"}'
+    values: '0x59 1x31'
+  promql_expr_test:
+  - expr: mesh:config_pushes_slow:ratio_rate5m
+    eval_time: 20m
+    exp_samples: [{labels: 'mesh:config_pushes_slow:ratio_rate5m', value: 0}]
+  - expr: round(mesh:config_pushes_slow:ratio_rate5m * 100)
+    eval_time: 60m
+    exp_samples: [{labels: '{}', value: 20}]
+  alert_rule_test:
+  - eval_time: 20m
+    alertname: MeshConfigPropagationSLOBurn
+    exp_alerts: []
+  - eval_time: 90m                                              # (2)
+    alertname: MeshConfigPropagationSLOBurn
+    exp_alerts:
+    - exp_labels: {severity: critical}
+      exp_annotations:
+        summary: Config pushes slower than 5 s use the 30-day error budget
+          14 times too fast.
+  - eval_time: 65m
+    alertname: MeshConfigRejected
+    exp_alerts:
+    - exp_labels: {severity: critical}
+      exp_annotations:
+        summary: Proxies rejected config; the acceptance SLO allows none.

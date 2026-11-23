@@ -1,0 +1,11 @@
+# The parts of the capstone that are the same in both data plane modes.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: shop
+resources:
+- strict-mtls.yaml
+- allow-nothing.yaml
+- tracing.yaml
+- services.yaml
+- error-rate.yaml
+- rollout.yaml

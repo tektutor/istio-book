@@ -1,0 +1,16 @@
+# An OpenShift Route that sends traffic from the OpenShift router to the
+# shop gateway. TLS ends at the router (edge); the router then talks
+# plain HTTP to the gateway.
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: shop
+spec:
+  to:
+    kind: Service
+    name: shop-gateway
+  port:
+    targetPort: http2                       # (1)
+  tls:
+    termination: edge                       # (2)
+    insecureEdgeTerminationPolicy: Redirect

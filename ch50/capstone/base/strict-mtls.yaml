@@ -1,0 +1,8 @@
+# R2: only mutual TLS reaches the shop's workloads (Chapter 30).
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+spec:
+  mtls:
+    mode: STRICT

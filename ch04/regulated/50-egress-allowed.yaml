@@ -1,0 +1,18 @@
+# The one external host that the payments service may call. With
+# REGISTRY_ONLY, every host that is not listed is blocked.
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: card-network
+  namespace: payments
+spec:
+  hosts:
+  - api.card-network.example.com
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: tls
+    protocol: TLS
+  resolution: DNS
+  exportTo:
+  - "."                        # (1)

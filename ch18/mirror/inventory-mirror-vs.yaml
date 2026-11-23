@@ -1,0 +1,19 @@
+# The same mirror with the classic API. mirrorPercentage takes a decimal
+# value, so you can mirror 0.5 percent of a busy service.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  hosts:
+  - inventory
+  http:
+  - name: mirror-to-v2
+    route:
+    - destination:
+        host: inventory-v1
+    mirror:
+      host: inventory-v2
+    mirrorPercentage:
+      value: 100.0

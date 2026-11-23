@@ -1,0 +1,13 @@
+# Sidecar mode: Argo Rollouts changes the weights of the VirtualService.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: inventory
+spec:
+  strategy:
+    canary:
+      trafficRouting:
+        istio:
+          virtualService:
+            name: inventory
+            routes: [primary]

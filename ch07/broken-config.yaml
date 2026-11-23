@@ -1,0 +1,29 @@
+# Two common mistakes that istioctl analyze finds before istiod does.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: orders
+  namespace: shop
+spec:
+  hosts:
+  - orders
+  http:
+  - route:
+    - destination:
+        host: orders
+        subset: v2                    # (1)
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: inventory-public
+  namespace: shop
+spec:
+  hosts:
+  - inventory.tektutor.org
+  gateways:
+  - shop-gateway                      # (2)
+  http:
+  - route:
+    - destination:
+        host: inventory

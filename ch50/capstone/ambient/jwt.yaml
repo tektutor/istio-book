@@ -1,0 +1,16 @@
+# R3 in ambient mode: the waypoint checks the JWT of requests to orders.
+# The Keycloak realm "shop" from Chapter 32 issues the tokens.
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: orders-jwt
+spec:
+  targetRefs:
+  - {kind: Service, group: "", name: orders}
+  jwtRules:
+  - issuer: http://keycloak.keycloak.svc.cluster.local:8080/realms/shop
+    jwksUri: "http://keycloak.keycloak.svc.cluster.local:8080/realms/shop/\
+      protocol/openid-connect/certs"
+    outputClaimToHeaders:
+    - header: x-shop-user
+      claim: preferred_username

@@ -1,0 +1,9 @@
+# The shop namespace in ambient mode, with one waypoint for the
+# whole namespace.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shop
+  labels:
+    istio.io/dataplane-mode: ambient   # (1)
+    istio.io/use-waypoint: waypoint    # (2)

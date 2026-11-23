@@ -1,0 +1,381 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    gateway.networking.k8s.io/generator: ingress2gateway-1.2.0
+  name: nginx
+  namespace: shop
+spec:
+  gatewayClassName: nginx
+  listeners:
+  - hostname: admin.tektutor.test
+    name: admin-tektutor-test-http
+    port: 80
+    protocol: HTTP
+  - hostname: admin.tektutor.test
+    name: admin-tektutor-test-https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - group: ""
+        kind: Secret
+        name: admin-tls
+  - hostname: grpc.tektutor.test
+    name: grpc-tektutor-test-http
+    port: 80
+    protocol: HTTP
+  - hostname: grpc.tektutor.test
+    name: grpc-tektutor-test-https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - group: ""
+        kind: Secret
+        name: grpc-tls
+  - hostname: shop.tektutor.test
+    name: shop-tektutor-test-http
+    port: 80
+    protocol: HTTP
+  - hostname: shop.tektutor.test
+    name: shop-tektutor-test-https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - group: ""
+        kind: Secret
+        name: shop-tls
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  annotations:
+    gateway.networking.k8s.io/generator: ingress2gateway-1.2.0
+  name: admin-admin-tektutor-test-http
+  namespace: shop
+spec:
+  hostnames:
+  - admin.tektutor.test
+  parentRefs:
+  - name: nginx
+    port: 80
+  rules:
+  - filters:
+    - requestRedirect:
+        scheme: https
+        statusCode: 308
+      type: RequestRedirect
+    matches:
+    - path:
+        type: PathPrefix
+        value: /orders
+  - filters:
+    - requestRedirect:
+        scheme: https
+        statusCode: 308
+      type: RequestRedirect
+    matches:
+    - path:
+        type: PathPrefix
+        value: /stock
+  - filters:
+    - requestRedirect:
+        scheme: https
+        statusCode: 308
+      type: RequestRedirect
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+status:
+  parents: null
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  annotations:
+    gateway.networking.k8s.io/generator: ingress2gateway-1.2.0
+  name: shop-api-shop-tektutor-test-http
+  namespace: shop
+spec:
+  hostnames:
+  - shop.tektutor.test
+  parentRefs:
+  - name: nginx
+    port: 80
+  rules:
+  - filters:
+    - requestRedirect:
+        scheme: https
+        statusCode: 308
+      type: RequestRedirect
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/api/cart.*
+  - filters:
+    - requestRedirect:
+        scheme: https
+        statusCode: 308
+      type: RequestRedirect
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/api/orders.*
+  - filters:
+    - requestRedirect:
+        scheme: https
+        statusCode: 308
+      type: RequestRedirect
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/api/stock.*
+  - filters:
+    - requestRedirect:
+        scheme: https
+        statusCode: 308
+      type: RequestRedirect
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/api/v1/(cart)(/|$)(.*).*
+  - filters:
+    - requestRedirect:
+        scheme: https
+        statusCode: 308
+      type: RequestRedirect
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/api/v1/(orders)(/|$)(.*).*
+  - filters:
+    - requestRedirect:
+        scheme: https
+        statusCode: 308
+      type: RequestRedirect
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/api/basket.*
+  - filters:
+    - requestRedirect:
+        scheme: https
+        statusCode: 308
+      type: RequestRedirect
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/catalogue.*
+  - filters:
+    - requestRedirect:
+        scheme: https
+        statusCode: 308
+      type: RequestRedirect
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/.*
+status:
+  parents: null
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  annotations:
+    gateway.networking.k8s.io/generator: ingress2gateway-1.2.0
+  name: admin-admin-tektutor-test
+  namespace: shop
+spec:
+  hostnames:
+  - admin.tektutor.test
+  parentRefs:
+  - name: nginx
+    port: 443
+    sectionName: admin-tektutor-test-https
+  rules:
+  - backendRefs:
+    - name: orders
+      port: 8080
+    matches:
+    - path:
+        type: PathPrefix
+        value: /orders
+  - backendRefs:
+    - name: inventory
+      port: 8080
+    matches:
+    - path:
+        type: PathPrefix
+        value: /stock
+  - backendRefs:
+    - name: frontend
+      port: 8080
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+status:
+  parents: []
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  annotations:
+    gateway.networking.k8s.io/generator: ingress2gateway-1.2.0
+  name: shop-api-shop-tektutor-test
+  namespace: shop
+spec:
+  hostnames:
+  - shop.tektutor.test
+  parentRefs:
+  - name: nginx
+    port: 443
+    sectionName: shop-tektutor-test-https
+  rules:
+  - backendRefs:
+    - name: cart
+      port: 8080
+    filters:
+    - cors:
+        allowCredentials: true
+        allowHeaders:
+        - content-type
+        - x-shop-user
+        allowMethods:
+        - GET
+        - PUT
+        - POST
+        - DELETE
+        - PATCH
+        - OPTIONS
+        allowOrigins:
+        - http://localhost:5173
+        maxAge: 1728000
+      type: CORS
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/api/cart.*
+    timeouts:
+      request: 5m0s
+  - backendRefs:
+    - name: orders
+      port: 8080
+    filters:
+    - cors:
+        allowCredentials: true
+        allowHeaders:
+        - content-type
+        - x-shop-user
+        allowMethods:
+        - GET
+        - PUT
+        - POST
+        - DELETE
+        - PATCH
+        - OPTIONS
+        allowOrigins:
+        - http://localhost:5173
+        maxAge: 1728000
+      type: CORS
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/api/orders.*
+    timeouts:
+      request: 5m0s
+  - backendRefs:
+    - name: inventory
+      port: 8080
+      weight: 90
+    - name: inventory-v2
+      port: 8080
+      weight: 10
+    filters:
+    - cors:
+        allowCredentials: true
+        allowHeaders:
+        - content-type
+        - x-shop-user
+        allowMethods:
+        - GET
+        - PUT
+        - POST
+        - DELETE
+        - PATCH
+        - OPTIONS
+        allowOrigins:
+        - http://localhost:5173
+        maxAge: 1728000
+      type: CORS
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/api/stock.*
+    timeouts:
+      request: 5m0s
+  - backendRefs:
+    - name: cart
+      port: 8080
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/api/v1/(cart)(/|$)(.*).*
+  - backendRefs:
+    - name: orders
+      port: 8080
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/api/v1/(orders)(/|$)(.*).*
+  - backendRefs:
+    - name: cart
+      port: 8080
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/api/basket.*
+  - filters:
+    - requestRedirect:
+        hostname: shop.tektutor.test
+        path:
+          replaceFullPath: /
+          type: ReplaceFullPath
+        scheme: https
+        statusCode: 301
+      type: RequestRedirect
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/catalogue.*
+  - backendRefs:
+    - name: frontend
+      port: 8080
+    matches:
+    - path:
+        type: RegularExpression
+        value: (?i)/.*
+status:
+  parents: []
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  annotations:
+    gateway.networking.k8s.io/generator: ingress2gateway-1.2.0
+  name: stock-grpc-grpc-tektutor-test
+  namespace: shop
+spec:
+  hostnames:
+  - grpc.tektutor.test
+  parentRefs:
+  - name: nginx
+  rules:
+  - backendRefs:
+    - name: stock-grpc
+      port: 9090
+status:
+  parents: null

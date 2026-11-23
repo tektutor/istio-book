@@ -1,0 +1,96 @@
+# The outbound side of the orders sidecar, with the two filters that
+# istiod adds for metrics: istio.metadata_exchange and istio.stats.
+# The node metadata is what istio-agent sends for a pod of the orders
+# Deployment. Needs the contrib build of Envoy, which has Istio's filters.
+#   18970  orders calls inventory here; mutual TLS to the inventory sidecar
+node:
+  id: sidecar~127.0.0.1~orders-6d4f9-x7k2p.shop~shop.svc.cluster.local
+  cluster: orders.shop
+  metadata:                                                      # (1)
+    NAME: orders-6d4f9-x7k2p
+    NAMESPACE: shop
+    WORKLOAD_NAME: orders
+    OWNER: kubernetes://apis/apps/v1/namespaces/shop/deployments/orders
+    CLUSTER_ID: Kubernetes
+    ISTIO_VERSION: 1.31.1
+    LABELS:
+      app: orders
+      version: v1
+      service.istio.io/canonical-name: orders
+      service.istio.io/canonical-revision: v1
+stats_config:
+  use_all_default_tags: false
+  stats_matcher:
+    inclusion_list:
+      patterns: [ { prefix: "istio" } ]
+static_resources:
+  listeners:
+  - name: outbound_inventory_8080
+    traffic_direction: OUTBOUND                                  # (2)
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18970 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: outbound_0.0.0.0_8080
+          route_config:
+            virtual_hosts:
+            - name: inventory
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route:
+                  cluster: outbound|8080||inventory.shop.svc.cluster.local
+          http_filters:
+          - name: istio.metadata_exchange                        # (3)
+            typed_config:
+              "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+              type_url: type.googleapis.com/io.istio.http.peer_metadata.Config
+              value:
+                upstream_discovery: [ { istio_headers: {} } ]
+                upstream_propagation: [ { istio_headers: {} } ]
+          - name: istio.stats                                    # (4)
+            typed_config:
+              "@type": type.googleapis.com/stats.PluginConfig
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+                router.v3.Router"
+  clusters:
+  - name: outbound|8080||inventory.shop.svc.cluster.local
+    connect_timeout: 2s
+    metadata:
+      filter_metadata:
+        istio:                                                   # (5)
+          services:
+          - host: inventory.shop.svc.cluster.local
+            name: inventory
+            namespace: shop
+    transport_socket:
+      name: envoy.transport_sockets.tls
+      typed_config:
+        "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.\
+          v3.UpstreamTlsContext"
+        common_tls_context:
+          tls_certificates:
+          - certificate_chain:
+              filename: /tmp/ch34-certs/orders/cert-chain.pem
+            private_key: { filename: /tmp/ch34-certs/orders/key.pem }
+          validation_context:
+            trusted_ca: { filename: /tmp/ch34-certs/root-cert.pem }
+    load_assignment:
+      cluster_name: outbound|8080||inventory.shop.svc.cluster.local
+      endpoints:
+      - lb_endpoints:
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18971 } } }
+          metadata:
+            filter_metadata:
+              istio:                                             # (6)
+                workload: inventory;shop;inventory;v1;Kubernetes
+admin:
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 19970 }

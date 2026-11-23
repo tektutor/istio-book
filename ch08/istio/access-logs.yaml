@@ -1,0 +1,12 @@
+# Turns on Envoy access logs for every proxy in the mesh. A Telemetry
+# resource in the root namespace, istio-system, with no selector applies
+# to all namespaces. Chapter 35 explains access logs.
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: mesh-default
+  namespace: istio-system
+spec:
+  accessLogging:
+  - providers:
+    - name: envoy

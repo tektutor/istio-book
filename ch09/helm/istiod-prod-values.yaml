@@ -1,0 +1,32 @@
+# Helm values for a production istiod, the same settings as
+# ch09/istioctl/prod-install.yaml. Install with:
+#   helm install istiod-1-31-1 istio/istiod -n istio-system \
+#     --version 1.31.1 -f ch09/helm/istiod-prod-values.yaml
+revision: 1-31-1                          # (1)
+meshConfig:
+  accessLogFile: ""
+  outboundTrafficPolicy:
+    mode: ALLOW_ANY
+  defaultConfig:
+    terminationDrainDuration: 20s
+resources:
+  requests:
+    cpu: "1"
+    memory: 2Gi
+autoscaleMin: 2                           # (2)
+autoscaleMax: 5
+topologySpreadConstraints:
+- maxSkew: 1
+  topologyKey: topology.kubernetes.io/zone
+  whenUnsatisfiable: ScheduleAnyway
+  labelSelector:
+    matchLabels:
+      app: istiod
+      istio.io/rev: 1-31-1
+global:
+  logAsJson: true
+  proxy:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi

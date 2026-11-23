@@ -1,0 +1,13 @@
+# Subscribes the cluster to the OpenShift Service Mesh 3 operator.
+# openshift-operators already has an OperatorGroup for all namespaces.
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: servicemeshoperator3
+  namespace: openshift-operators
+spec:
+  name: servicemeshoperator3                # (1)
+  channel: stable-3.4                       # (2)
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Manual               # (3)

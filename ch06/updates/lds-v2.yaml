@@ -1,0 +1,29 @@
+# Version 2: a header that shows which configuration version answered.
+version_info: "2"
+resources:
+- "@type": type.googleapis.com/envoy.config.listener.v3.Listener
+  name: shop_http
+  address:
+    socket_address: { address: 0.0.0.0, port_value: 10000 }
+  filter_chains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typed_config:
+        "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+          http_connection_manager.v3.HttpConnectionManager"
+        stat_prefix: shop
+        route_config:
+          name: shop_routes
+          virtual_hosts:
+          - name: shop
+            domains: ["*"]
+            routes:
+            - match: { prefix: "/api/" }
+              route: { cluster: inventory, timeout: 2s }
+              response_headers_to_add:                    # (1)
+              - header: { key: x-config-version, value: "2" }
+        http_filters:
+        - name: envoy.filters.http.router
+          typed_config:
+            "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+              router.v3.Router"

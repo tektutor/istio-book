@@ -1,0 +1,56 @@
+# Alerts on the mesh itself, for the Prometheus of Chapter 34. Load them
+# with ch44/monitoring/load-alerts.sh. Each alert names its runbook.
+groups:
+- name: istio-mesh-health
+  rules:
+  - alert: IstiodDown                                            # (1)
+    expr: sum(up{app="istiod"}) == 0 or absent(up{app="istiod"})
+    for: 2m
+    labels: {severity: critical}
+    annotations:
+      summary: No istiod replica is up. Config, certificates and
+        sidecar injection have stopped.
+      runbook: runbooks/istiod-down.md
+  - alert: IstioConfigRejected                                   # (2)
+    expr: sum(increase(pilot_total_xds_rejects[5m])) by (type) > 0
+    labels: {severity: critical}
+    annotations:
+      summary: Proxies rejected {{ $labels.type }} config from istiod.
+        They keep running on their last accepted config.
+      runbook: runbooks/config-rejected.md
+  - alert: IstioWorkloadCertNotRenewed                           # (3)
+    expr: min by (namespace, pod) (istio_agent_cert_expiry_seconds) < 36000
+    for: 10m
+    labels: {severity: warning}
+    annotations:
+      summary: The certificate of {{ $labels.namespace }}/{{ $labels.pod }}
+        expires in less than 10 hours; renewal has failed.
+      runbook: runbooks/istiod-down.md
+  - alert: IstioPushSlow                                         # (4)
+    expr: >
+      histogram_quantile(0.99, sum by (le)
+        (rate(pilot_proxy_convergence_time_bucket[5m]))) > 10
+    for: 10m
+    labels: {severity: warning}
+    annotations:
+      summary: 1% of config pushes take more than 10 seconds.
+      runbook: runbooks/push-storm.md
+  - alert: IstioInjectionWebhookFailing                          # (5)
+    expr: >
+      sum(rate(apiserver_admission_webhook_rejection_count{
+        name=~".*sidecar-injector.istio.io"}[5m])) > 0
+    for: 5m
+    labels: {severity: critical}
+    annotations:
+      summary: The API server cannot reach the injection webhook. New
+        pods in injected namespaces cannot be created.
+      runbook: runbooks/istiod-down.md
+  - alert: IstioCNIAgentMissing                                  # (6)
+    expr: >
+      kube_daemonset_status_number_ready{daemonset="istio-cni-node"}
+        < scalar(count(kube_node_info))
+    for: 5m
+    labels: {severity: critical}
+    annotations:
+      summary: Fewer Istio CNI agents are ready than there are nodes.
+      runbook: runbooks/cni-node.md

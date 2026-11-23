@@ -1,0 +1,11 @@
+# REGISTRY_ONLY for the shop namespace only. A Sidecar resource in a
+# namespace, with no workloadSelector, applies to every sidecar there.
+# Other namespaces keep the mesh-wide mode, ALLOW_ANY by default.
+apiVersion: networking.istio.io/v1
+kind: Sidecar
+metadata:
+  name: default
+  namespace: shop
+spec:
+  outboundTrafficPolicy:
+    mode: REGISTRY_ONLY                 # (1)

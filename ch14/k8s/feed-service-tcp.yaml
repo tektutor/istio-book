@@ -1,0 +1,15 @@
+# The feed Service, fixed: the port declares its protocol twice, in the
+# name and in appProtocol. Either one is enough; appProtocol wins.
+apiVersion: v1
+kind: Service
+metadata:
+  name: feed
+  namespace: shop
+spec:
+  selector:
+    app: feed
+  ports:
+  - name: tcp-feed                # (1)
+    port: 7070
+    targetPort: 7070
+    appProtocol: tcp              # (2)

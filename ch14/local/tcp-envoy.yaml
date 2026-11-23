@@ -1,0 +1,29 @@
+# The listener that Istio builds once the port says TCP: no inspectors,
+# one filter chain, and Envoy connects to the feed at once.
+# Port 17072 stands for the feed Service with the port name "tcp-feed".
+static_resources:
+  listeners:
+  - name: feed_tcp_7070
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 17072 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            tcp_proxy.v3.TcpProxy"
+          stat_prefix: feed_tcp
+          cluster: feed
+  clusters:
+  - name: feed
+    connect_timeout: 1s
+    load_assignment:
+      cluster_name: feed
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: 127.0.0.1, port_value: 17070 }
+admin:
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 19902 }

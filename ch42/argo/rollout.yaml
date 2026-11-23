@@ -1,0 +1,67 @@
+# Inside one cell: a canary of the cell application with Argo Rollouts.
+# The cell's traffic enters through the Gateway API gateway cell-gw, so
+# the Rollout moves weights in the HTTPRoute cell-app, with Argo Rollouts'
+# Gateway API plugin, which you install as its documentation describes.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: cell-app
+spec:
+  replicas: 2
+  workloadRef:                                              # (1)
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cell-app
+    scaleDown: progressively
+  strategy:
+    canary:
+      stableService: cell-app-stable                        # (2)
+      canaryService: cell-app-canary
+      trafficRouting:
+        plugins:
+          argoproj-labs/gatewayAPI:
+            httpRoute: cell-app                             # (3)
+            namespace: shop
+      steps:
+      - setWeight: 10                                       # (4)
+      - pause: {duration: 10m}
+      - setWeight: 50
+      - pause: {duration: 10m}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cell-app-stable
+spec:
+  selector:
+    app: cell-app
+  ports:
+  - name: http
+    port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cell-app-canary
+spec:
+  selector:
+    app: cell-app
+  ports:
+  - name: http
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cell-app
+spec:
+  parentRefs:
+  - name: cell-gw
+  rules:
+  - backendRefs:
+    - name: cell-app-stable
+      port: 8080
+      weight: 100
+    - name: cell-app-canary
+      port: 8080
+      weight: 0

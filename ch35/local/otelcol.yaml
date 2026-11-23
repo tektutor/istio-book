@@ -1,0 +1,30 @@
+# The OpenTelemetry Collector for the local demo: it receives access log
+# records from Envoy over OTLP and sends them to Loki's OTLP endpoint.
+# ch35/loki/otel-collector.yaml runs the same pipeline in the cluster.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:14317
+processors:
+  transform:                                                     # (1)
+    log_statements:
+    - context: log
+      statements:
+      - set(resource.attributes["service.name"], attributes["workload"])
+      - set(resource.attributes["k8s.namespace.name"], attributes["namespace"])
+      - set(resource.attributes["k8s.pod.name"], attributes["pod"])
+  batch:
+    timeout: 1s
+exporters:
+  otlphttp:
+    endpoint: http://127.0.0.1:13100/otlp                        # (2)
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [transform, batch]
+      exporters: [otlphttp]
+  telemetry:
+    metrics:
+      level: none

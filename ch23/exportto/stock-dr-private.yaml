@@ -1,0 +1,15 @@
+# A DestinationRule that applies only to clients in the shop namespace.
+# Clients elsewhere use their own rule, or none.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: stock-grpc-shop-only
+  namespace: shop
+spec:
+  host: stock-grpc.shop.svc.cluster.local
+  exportTo:
+  - "."                                           # (1)
+  trafficPolicy:
+    connectionPool:
+      http:
+        maxConcurrentStreams: 100

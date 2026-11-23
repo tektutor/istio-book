@@ -1,0 +1,25 @@
+# The control plane for the upgrade lab: the lab settings of Chapter 8,
+# with the image registry set explicitly. Install it once per revision:
+#   istioctl install -f ch43/istio/control-plane.yaml --set revision=1-30-5
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: control-plane
+  namespace: istio-system
+spec:
+  profile: minimal                    # (1)
+  hub: docker.io/istio                # (2)
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+  values:
+    global:
+      proxy:
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi

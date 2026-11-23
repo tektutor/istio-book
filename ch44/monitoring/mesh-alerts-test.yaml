@@ -1,0 +1,41 @@
+# Unit tests for mesh-alerts.yaml:
+#   promtool test rules ch44/monitoring/mesh-alerts-test.yaml
+rule_files: [mesh-alerts.yaml]
+evaluation_interval: 1m
+tests:
+- interval: 1m
+  input_series:
+  - series: 'up{app="istiod", pod="istiod-1"}'
+    values: '1 1 0 0 0 0 0'                                     # (1)
+  - series: 'pilot_total_xds_rejects{type="lds"}'
+    values: '0 0 0 2 8 8 8'                                     # (2)
+  - series: 'istio_agent_cert_expiry_seconds{namespace="shop",pod="client-1"}'
+    values: '40000-600x20'                                      # (3)
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: IstiodDown
+    exp_alerts:
+    - exp_labels: {severity: critical}
+      exp_annotations:
+        summary: No istiod replica is up. Config, certificates and sidecar
+          injection have stopped.
+        runbook: runbooks/istiod-down.md
+  - eval_time: 5m
+    alertname: IstioConfigRejected
+    exp_alerts:
+    - exp_labels: {severity: critical, type: lds}
+      exp_annotations:
+        summary: Proxies rejected lds config from istiod. They keep running
+          on their last accepted config.
+        runbook: runbooks/config-rejected.md
+  - eval_time: 12m
+    alertname: IstioWorkloadCertNotRenewed
+    exp_alerts: []
+  - eval_time: 18m
+    alertname: IstioWorkloadCertNotRenewed
+    exp_alerts:
+    - exp_labels: {severity: warning, namespace: shop, pod: client-1}
+      exp_annotations:
+        summary: The certificate of shop/client-1 expires in less than 10
+          hours; renewal has failed.
+        runbook: runbooks/istiod-down.md

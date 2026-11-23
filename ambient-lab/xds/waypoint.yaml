@@ -1,0 +1,24 @@
+# The waypoint of the bookinfo namespace: its pod and its Service, as
+# istiod sends them once the Gateway named waypoint is ready. The pod
+# does not join ambient mode itself, so its protocol is TCP.     # (1)
+addWorkloads:
+- uid: Kubernetes//Pod/bookinfo/waypoint
+  name: waypoint
+  namespace: bookinfo
+  serviceAccount: waypoint
+  trustDomain: tektutor.org
+  workloadIps: [10.244.2.20]
+  protocol: TCP
+  node: lab-m02
+  clusterId: Kubernetes
+  workloadName: waypoint
+  canonicalName: waypoint
+  canonicalRevision: latest
+  services:
+    bookinfo/waypoint.bookinfo.svc.cluster.local: {15008: 15008, 15021: 15021}
+addServices:
+- name: waypoint
+  namespace: bookinfo
+  hostname: waypoint.bookinfo.svc.cluster.local
+  vips: [/10.96.10.20]
+  ports: {15008: 15008, 15021: 15021}

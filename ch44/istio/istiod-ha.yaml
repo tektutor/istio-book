@@ -1,0 +1,30 @@
+# Production settings for istiod's availability, as an overlay to merge
+# with your own control plane file:
+#   istioctl install -y -f control-plane.yaml -f ch44/istio/istiod-ha.yaml
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: control-plane
+  namespace: istio-system
+spec:
+  components:
+    pilot:
+      k8s:
+        hpaSpec:
+          minReplicas: 2              # (1)
+          maxReplicas: 5
+        podDisruptionBudget:
+          minAvailable: 1             # (2)
+        affinity:
+          podAntiAffinity:            # (3)
+            preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels: {app: istiod}
+        priorityClassName: system-cluster-critical    # (4)
+        resources:
+          requests:
+            cpu: "1"
+            memory: 2Gi

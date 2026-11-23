@@ -1,0 +1,24 @@
+# A curl Deployment for the injection lab. It names no namespace;
+# the lab applies it with -n ch12.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: curl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: curl
+  template:
+    metadata:
+      labels:
+        app: curl
+    spec:
+      containers:
+      - name: curl
+        image: docker.io/curlimages/curl:8.16.0
+        command: ["sleep", "infinity"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi

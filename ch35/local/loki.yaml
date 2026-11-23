@@ -1,0 +1,29 @@
+# A single-process Loki for the local demo, with its data in /tmp.
+auth_enabled: false
+server:
+  http_listen_address: 127.0.0.1
+  http_listen_port: 13100
+  grpc_listen_address: 127.0.0.1
+  grpc_listen_port: 19096
+common:
+  path_prefix: /tmp/ch35-loki
+  replication_factor: 1
+  instance_addr: 127.0.0.1
+  ring:
+    kvstore:
+      store: inmemory
+  storage:
+    filesystem:
+      chunks_directory: /tmp/ch35-loki/chunks
+      rules_directory: /tmp/ch35-loki/rules
+schema_config:
+  configs:
+  - from: "2024-04-01"
+    store: tsdb
+    object_store: filesystem
+    schema: v13
+    index:
+      prefix: index_
+      period: 24h
+analytics:
+  reporting_enabled: false

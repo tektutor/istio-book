@@ -1,0 +1,20 @@
+# A Job that asks inventory for one stock level and exits. With a
+# native sidecar, the Job completes when the curl container ends.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: stock-check
+  namespace: shop
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: stock-check
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: check
+        image: docker.io/curlimages/curl:8.16.0
+        command: ["curl", "-sS", "--fail",                        # (1)
+                  "http://inventory:8080/api/stock/SKU-1"]

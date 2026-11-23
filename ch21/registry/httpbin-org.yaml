@@ -1,0 +1,22 @@
+# httpbin.org in the shop namespace's registry: plain HTTP on port 80
+# and TLS on port 443. The sidecars resolve the name with DNS and send
+# each connection to one of the addresses it returns.
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: httpbin-org
+  namespace: shop
+spec:
+  hosts:
+  - httpbin.org                         # (1)
+  location: MESH_EXTERNAL               # (2)
+  ports:
+  - number: 80
+    name: http
+    protocol: HTTP                      # (3)
+  - number: 443
+    name: https
+    protocol: HTTPS                     # (4)
+  resolution: DNS                       # (5)
+  exportTo:
+  - "."                                 # (6)

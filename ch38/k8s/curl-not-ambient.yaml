@@ -1,0 +1,36 @@
+# A curl pod in the shop namespace that stays out of ambient mode, for
+# Lab 38.1. The pod's own label overrides the namespace's label.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: curl-outside
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: curl-outside
+  template:
+    metadata:
+      labels:
+        app: curl-outside
+        istio.io/dataplane-mode: none
+    spec:
+      serviceAccountName: curl
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100        # the image's user curl_user
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: curl
+        image: docker.io/curlimages/curl:8.16.0
+        command: ["sleep", "infinity"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi

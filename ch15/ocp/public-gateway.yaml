@@ -1,0 +1,27 @@
+# ch15/gateway/public-gateway.yaml for OpenShift Local, which has no load
+# balancer: the gateway's Service gets the type ClusterIP, and the Route in
+# public-route.yaml brings traffic from the OpenShift router to it.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: public
+  namespace: ingress
+  annotations:
+    networking.istio.io/service-type: ClusterIP      # OpenShift Local only
+spec:
+  gatewayClassName: istio                          # (1)
+  listeners:
+  - name: http                                     # (2)
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Selector                             # (3)
+        selector:
+          matchLabels:
+            tektutor.org/ingress: allowed

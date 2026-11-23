@@ -1,0 +1,83 @@
+# OPA with the Envoy plugin, as a gRPC ext_authz service on port 9191.
+# Create the ConfigMap with the policy first:
+#   kubectl create namespace opa
+#   kubectl create configmap opa-policy -n opa --from-file=ch32/opa/policy.rego
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-config
+  namespace: opa
+data:
+  config.yaml: |
+    plugins:
+      envoy_ext_authz_grpc:
+        addr: :9191
+        path: istio/authz/allow
+    decision_logs:
+      console: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opa
+  namespace: opa
+spec:
+  replicas: 2                                                  # (1)
+  selector:
+    matchLabels:
+      app: opa
+  template:
+    metadata:
+      labels:
+        app: opa
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: opa
+        image: docker.io/openpolicyagent/opa:1.21.1-envoy      # (2)
+        args: ["run", "--server", "--addr=:8181",
+               "--config-file=/config/config.yaml", "/policy/policy.rego"]
+        ports:
+        - containerPort: 9191
+        - containerPort: 8181
+        readinessProbe:
+          httpGet:
+            path: /health?plugins
+            port: 8181
+        volumeMounts:
+        - { name: config, mountPath: /config }
+        - { name: policy, mountPath: /policy }
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+      volumes:
+      - name: config
+        configMap: { name: opa-config }
+      - name: policy
+        configMap: { name: opa-policy }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opa
+  namespace: opa
+spec:
+  selector:
+    app: opa
+  ports:
+  - name: grpc
+    port: 9191
+    targetPort: 9191
+    appProtocol: grpc

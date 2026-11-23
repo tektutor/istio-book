@@ -1,0 +1,14 @@
+# What ztunnel receives for the sidecar-era policy reviews-get-only, a
+# selector policy that allows GET from productpage. ztunnel cannot check
+# methods, so istiod drops the rule: an ALLOW policy without rules,
+# which allows nothing.
+addPolicies:
+- name: reviews-get-only
+  namespace: bookinfo
+  scope: WorkloadSelector
+  action: Allow
+  dryRun: false
+  rules: []                                                    # (1)
+setWorkloads:
+  reviews-v1: { authorizationPolicies: [bookinfo/reviews-get-only] }
+  reviews-v2: { authorizationPolicies: [bookinfo/reviews-get-only] }

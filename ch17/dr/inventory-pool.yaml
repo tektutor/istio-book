@@ -1,0 +1,22 @@
+# Limits for calls to inventory, from every client proxy. Inventory has
+# one port, 8080, so these limits apply to every call.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  host: inventory
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100                        # (1)
+        connectTimeout: 2s
+        tcpKeepalive:
+          time: 300s
+          interval: 30s
+      http:
+        http1MaxPendingRequests: 64                # (2)
+        http2MaxRequests: 200                      # (3)
+        maxRequestsPerConnection: 0                # (4)
+        idleTimeout: 300s                          # (5)

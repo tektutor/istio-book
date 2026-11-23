@@ -1,0 +1,13 @@
+# OpenShift only: a merge patch for the Istio resource from Chapter 10.
+# The internal image registry serves TLS with a certificate from the
+# OpenShift service CA, which istio-agent does not trust. The variable makes
+# istio-agent skip the certificate check for this one registry, in every
+# proxy that starts after the change. Apply it with
+#   oc patch istio default --type merge --patch-file ch39/ocp/wasm-insecure.yaml
+spec:
+  values:
+    meshConfig:
+      defaultConfig:
+        proxyMetadata:
+          WASM_INSECURE_REGISTRIES: >-
+            image-registry.openshift-image-registry.svc:5000

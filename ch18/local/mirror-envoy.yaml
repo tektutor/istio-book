@@ -1,0 +1,53 @@
+# A route that sends every request to inventory v1 and a copy to v2, the
+# way Istio builds a VirtualService mirror or an HTTPRoute RequestMirror.
+static_resources:
+  listeners:
+  - name: inventory
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18300 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: inventory
+          route_config:
+            virtual_hosts:
+            - name: inventory
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route:
+                  cluster: inventory_v1
+                  request_mirror_policies:                   # (1)
+                  - cluster: inventory_v2
+                    runtime_fraction:
+                      default_value: { numerator: 100 }
+                    trace_sampled: false                     # (2)
+                    disable_shadow_host_suffix_append: true  # (3)
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+                router.v3.Router"
+  clusters:
+  - name: inventory_v1
+    connect_timeout: 1s
+    load_assignment:
+      cluster_name: inventory_v1
+      endpoints:
+      - lb_endpoints:
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18091 } } }
+  - name: inventory_v2
+    connect_timeout: 1s
+    load_assignment:
+      cluster_name: inventory_v2
+      endpoints:
+      - lb_endpoints:
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18092 } } }
+admin:
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 19904 }

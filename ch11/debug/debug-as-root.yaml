@@ -1,0 +1,8 @@
+# A partial container spec for `kubectl debug --custom`. The shop pods set
+# runAsNonRoot: true for the whole pod, and an ephemeral container inherits
+# it. netshoot runs as root, so without these two lines the kubelet refuses
+# to start it. They apply only to the debug container; the application
+# containers keep their own settings.
+securityContext:
+  runAsUser: 0                                # (1)
+  runAsNonRoot: false                         # (2)

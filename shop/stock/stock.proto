@@ -1,0 +1,20 @@
+// The stock service's API. GetStock answers one question; WatchStock
+// keeps the stream open and sends a new level every few seconds.
+syntax = "proto3";
+
+package tektutor.stock.v1;
+
+service StockService {
+  rpc GetStock(GetStockRequest) returns (StockLevel);
+  rpc WatchStock(GetStockRequest) returns (stream StockLevel);
+}
+
+message GetStockRequest {
+  string sku = 1;
+}
+
+message StockLevel {
+  string sku = 1;
+  int32 quantity = 2;
+  string pod = 3;          // the pod that answered, for the labs
+}

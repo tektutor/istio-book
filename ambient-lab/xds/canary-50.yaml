@@ -1,0 +1,11 @@
+# reviews keeps the label istio.io/use-waypoint=waypoint and adds the
+# label istio.io/use-waypoint-canary=waypoint-v2 with the annotation
+# istio.io/use-waypoint-canary-weight: "50". istiod sends both waypoints.
+setServices:
+  reviews:
+    waypoint: { destination: /10.96.10.20, hboneMtlsPort: 15008 }
+    weightedWaypoints:                                           # (1)
+    - destination: { destination: /10.96.10.20, hboneMtlsPort: 15008 }
+      weight: 50
+    - destination: { destination: /10.96.10.21, hboneMtlsPort: 15008 }
+      weight: 50

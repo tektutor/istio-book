@@ -1,0 +1,35 @@
+# Two external TCP services on the same port. The host names exist only
+# in the mesh: no DNS server outside Istio knows them.
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: feed-a
+  namespace: shop
+spec:
+  hosts:
+  - feed-a.legacy.tektutor.test         # (1)
+  location: MESH_EXTERNAL
+  ports:
+  - number: 7070
+    name: tcp-feed
+    protocol: TCP
+  resolution: DNS                 # (2)
+  endpoints:
+  - address: feed-a.legacy.svc.cluster.local
+---
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: feed-b
+  namespace: shop
+spec:
+  hosts:
+  - feed-b.legacy.tektutor.test
+  location: MESH_EXTERNAL
+  ports:
+  - number: 7070
+    name: tcp-feed
+    protocol: TCP
+  resolution: DNS
+  endpoints:
+  - address: feed-b.legacy.svc.cluster.local

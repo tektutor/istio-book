@@ -1,0 +1,24 @@
+# Old clients call /api/v1/cart/...; the cart only knows /api/cart/...
+# The caller's sidecar rewrites the path before the request leaves.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: cart
+  namespace: shop
+spec:
+  hosts:
+  - cart
+  http:
+  - name: v1-clients
+    match:
+    - uri:
+        prefix: /api/v1/cart/                      # (1)
+    rewrite:
+      uri: /api/cart/                              # (2)
+    route:
+    - destination:
+        host: cart
+  - name: default
+    route:
+    - destination:
+        host: cart

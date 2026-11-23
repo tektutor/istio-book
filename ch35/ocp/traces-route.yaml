@@ -1,0 +1,40 @@
+# ch35/k8s/traces-route.yaml for OpenShift: the gateway passes the
+# browser's spans to the OTLP/HTTP port of Tempo in the project tracing,
+# which the ReferenceGrant allows.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: browser-traces
+  namespace: shop
+spec:
+  parentRefs:
+  - name: public
+    namespace: ingress
+    sectionName: shop-https
+  hostnames:
+  - shop.tektutor.test
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /v1/traces
+      method: POST
+    backendRefs:
+    - name: tempo-lab
+      namespace: tracing
+      port: 4318
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: shop-browser-traces
+  namespace: tracing
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    namespace: shop
+  to:
+  - group: ""
+    kind: Service
+    name: tempo-lab

@@ -1,0 +1,11 @@
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  host: inventory
+  trafficPolicy:
+    retryBudget:                   # (1)
+      percent: 20                  # (2)
+      minRetryConcurrency: 3       # (3)

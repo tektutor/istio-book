@@ -1,0 +1,42 @@
+# Two extra Services for the release. Argo Rollouts adds the pod template
+# hash of the stable and of the canary ReplicaSet to their selectors.
+# Callers keep using the Service "inventory".
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-stable
+  namespace: shop
+spec:
+  selector: {app: inventory}
+  ports:
+  - {name: http, port: 8080, appProtocol: http}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-canary
+  namespace: shop
+spec:
+  selector: {app: inventory}
+  ports:
+  - {name: http, port: 8080, appProtocol: http}
+---
+# The route that Argo Rollouts changes. It starts with all traffic on
+# the stable Service; the controller rewrites the two weights.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  hosts:
+  - inventory.shop.svc.cluster.local
+  http:
+  - name: primary                                              # (1)
+    route:
+    - destination:
+        host: inventory-stable.shop.svc.cluster.local
+      weight: 100
+    - destination:
+        host: inventory-canary.shop.svc.cluster.local
+      weight: 0

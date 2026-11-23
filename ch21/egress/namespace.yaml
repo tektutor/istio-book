@@ -1,0 +1,6 @@
+# The namespace for the egress gateway and the external services it
+# serves. The platform team owns it; application teams do not.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: egress

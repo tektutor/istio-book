@@ -1,0 +1,77 @@
+# Two gateway listeners for partner.tektutor.test, built the way Istio
+# builds them from a Gateway with client certificate validation:
+#   port 18443  AllowValidOnly         (Istio: MUTUAL)
+#   port 18444  AllowInsecureFallback  (Istio: OPTIONAL_MUTUAL)
+# The certificates come from make-certs.sh in /tmp/ch19-certs.
+static_resources:
+  listeners:
+  - name: mutual
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18443 }
+    filter_chains:
+    - transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.transport_sockets.\
+            tls.v3.DownstreamTlsContext"
+          require_client_certificate: true                   # (1)
+          common_tls_context:
+            tls_certificates:
+            - certificate_chain: { filename: /tmp/ch19-certs/server.crt }
+              private_key: { filename: /tmp/ch19-certs/server.key }
+            validation_context:
+              trusted_ca: { filename: /tmp/ch19-certs/partner-ca.crt }
+      filters: &hcm
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: partner
+          forward_client_cert_details: SANITIZE_SET          # (2)
+          set_current_client_cert_details:
+            subject: true
+            cert: true
+            dns: true
+            uri: true
+          route_config:
+            virtual_hosts:
+            - name: partner
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route: { cluster: echo }
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+                router.v3.Router"
+  - name: optional_mutual
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18444 }
+    filter_chains:
+    - transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.transport_sockets.\
+            tls.v3.DownstreamTlsContext"
+          require_client_certificate: false                  # (3)
+          common_tls_context:
+            tls_certificates:
+            - certificate_chain: { filename: /tmp/ch19-certs/server.crt }
+              private_key: { filename: /tmp/ch19-certs/server.key }
+            validation_context:
+              trusted_ca: { filename: /tmp/ch19-certs/partner-ca.crt }
+              trust_chain_verification: ACCEPT_UNTRUSTED
+      filters: *hcm
+  clusters:
+  - name: echo
+    connect_timeout: 1s
+    load_assignment:
+      cluster_name: echo
+      endpoints:
+      - lb_endpoints:
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18080 } } }
+admin:
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 19905 }

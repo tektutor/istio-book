@@ -1,0 +1,39 @@
+# A plain Kubernetes Ingress that Istio serves. Istio handles Ingress
+# objects of a class whose controller is istio.io/ingress-controller.
+# The gateway pods and the TLS Secret shop-tls live in istio-system.
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: istio
+spec:
+  controller: istio.io/ingress-controller
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shop
+  namespace: shop
+spec:
+  ingressClassName: istio
+  tls:
+  - hosts:
+    - shop.tektutor.test
+    secretName: shop-tls
+  rules:
+  - host: shop.tektutor.test
+    http:
+      paths:
+      - path: /api/cart
+        pathType: Prefix
+        backend:
+          service:
+            name: cart
+            port:
+              number: 8080
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 8080

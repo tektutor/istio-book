@@ -1,0 +1,16 @@
+# Expected result: denied by guardrail 3. The workload mode is STRICT,
+# but one port turns mTLS off.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: metrics-port
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: inventory
+  mtls:
+    mode: STRICT
+  portLevelMtls:
+    "9090":
+      mode: DISABLE

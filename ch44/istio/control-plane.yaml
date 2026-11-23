@@ -1,0 +1,31 @@
+# The control plane of the failure lab: istiod and the Istio CNI node
+# agent, one istiod replica as in most test clusters, and images from
+# Docker Hub. Install it with:
+#   istioctl install -y -f ch44/istio/control-plane.yaml
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: control-plane
+  namespace: istio-system
+spec:
+  profile: minimal
+  hub: docker.io/istio
+  components:
+    cni:
+      enabled: true                   # (1)
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+  values:
+    cni:
+      repair:
+        repairPods: true              # (2)
+    global:
+      proxy:
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi

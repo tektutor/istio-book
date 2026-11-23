@@ -1,0 +1,10 @@
+# The label istio.io/use-waypoint=waypoint on the namespace bookinfo:
+# every Service in the namespace uses the waypoint, except the
+# waypoint's own Service.
+setServices:
+  productpage: &waypoint
+    waypoint: { destination: /10.96.10.20, hboneMtlsPort: 15008 }
+  reviews: *waypoint
+  reviews-v1: *waypoint
+  reviews-v2: *waypoint
+  ratings: *waypoint

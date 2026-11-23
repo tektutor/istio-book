@@ -1,0 +1,26 @@
+# Istio for one cell: the lab installation of Chapter 8. Each cell is a
+# mesh of its own; create-cells.sh sets its trust domain.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: cell
+  namespace: istio-system
+spec:
+  profile: default
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+    ingressGateways:
+    - name: istio-ingressgateway
+      enabled: false
+  values:
+    global:
+      proxy:
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi

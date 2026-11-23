@@ -1,0 +1,22 @@
+# A GRPCRoute matches the gRPC service and method instead of a path.
+# Chapter 22 builds the stock service that this route sends calls to.
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: stock
+  namespace: shop
+spec:
+  parentRefs:
+  - name: public
+    namespace: ingress
+    sectionName: http
+  hostnames:
+  - grpc.tektutor.test
+  rules:
+  - matches:
+    - method:
+        service: tektutor.stock.v1.StockService    # (1)
+        method: GetStock
+    backendRefs:
+    - name: stock-grpc
+      port: 9090

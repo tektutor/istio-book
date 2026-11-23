@@ -1,0 +1,28 @@
+# Teams may not export routing resources to the whole mesh. Only the
+# platform team, in istio-system, may set exportTo "*".
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: no-mesh-wide-exports
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:                                             # (1)
+    - apiGroups: ["networking.istio.io"]
+      apiVersions: ["*"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["virtualservices", "destinationrules", "serviceentries"]
+  validations:
+  - expression: >-                                             # (2)
+      object.metadata.namespace == 'istio-system' ||
+      !has(object.spec.exportTo) ||
+      !object.spec.exportTo.exists(e, e == '*')
+    message: "exportTo '*' is reserved for istio-system"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: no-mesh-wide-exports
+spec:
+  policyName: no-mesh-wide-exports
+  validationActions: ["Deny"]                                  # (3)

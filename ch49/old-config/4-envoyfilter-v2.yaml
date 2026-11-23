@@ -1,0 +1,22 @@
+# An EnvoyFilter written for the Envoy v2 API and the old filter names.
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: idle-timeout
+  namespace: demo
+spec:
+  workloadSelector:
+    labels: {app: httpbin}
+  configPatches:
+  - applyTo: NETWORK_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter: {name: envoy.http_connection_manager}
+    patch:
+      operation: MERGE
+      value:
+        typed_config:
+          "@type": type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          common_http_protocol_options: {idle_timeout: 30s}

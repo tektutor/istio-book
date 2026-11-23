@@ -1,0 +1,24 @@
+# Mesh-wide hardening settings, on top of the lab installation and the
+# trust domain from Chapter 29:
+#   istioctl install -f ch13/istio/lab-install-ambient.yaml \
+#     -f ch29/istio/trust-domain.yaml -f ch33/istio/hardened.yaml -y
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  components:
+    pilot:
+      k8s:
+        replicaCount: 2                                        # (1)
+  meshConfig:
+    outboundTrafficPolicy:
+      mode: REGISTRY_ONLY                                      # (2)
+    tlsDefaults:
+      minProtocolVersion: TLSV1_3                              # (3)
+    defaultConfig:
+      runtimeValues:
+        overload.global_downstream_max_connections: "100000"   # (4)
+  values:
+    pilot:
+      autoscaleMin: 2                                          # (5)
+    global:
+      variant: distroless                                      # (6)

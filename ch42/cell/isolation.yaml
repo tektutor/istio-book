@@ -1,0 +1,40 @@
+# Keeps a cell's traffic inside the cell: mutual TLS only, calls to the
+# app only from the cell's own gateway, and no egress configuration for
+# Services outside the namespace.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: shop
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: cell-app
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: cell-app
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - CELL_NAME.tektutor.org/ns/shop/sa/cell-gw-istio   # (1)
+---
+apiVersion: networking.istio.io/v1
+kind: Sidecar
+metadata:
+  name: default
+  namespace: shop
+spec:
+  egress:
+  - hosts:
+    - "./*"                                                 # (2)
+    - "istio-system/*"
+  outboundTrafficPolicy:
+    mode: REGISTRY_ONLY                                     # (3)

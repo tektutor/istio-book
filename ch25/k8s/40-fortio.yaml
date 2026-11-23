@@ -1,0 +1,35 @@
+# Fortio for Chapter 25. Its sidecar keeps the counters of circuit
+# breakers and outlier detection, which Istio drops by default.
+# Applying this file replaces the Fortio Deployment from Chapter 24.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fortio
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fortio
+  template:
+    metadata:
+      labels:
+        app: fortio
+        version: v1
+      annotations:
+        proxy.istio.io/config: |
+          proxyStatsMatcher:
+            inclusionRegexps:                                   # (1)
+            - ".*upstream_rq_(total|pending_overflow|retry_overflow).*"
+            - ".*outlier_detection.*"
+    spec:
+      containers:
+      - name: fortio
+        image: docker.io/fortio/fortio:1.76.0
+        args: ["server"]
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi

@@ -1,0 +1,47 @@
+# R3 and R5: who may call inventory and orders. The public gateway must
+# also send a valid JWT; internal test clients use their identity only.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: inventory-allow
+spec:
+  selector:
+    matchLabels: {app: inventory}
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/shop/sa/orders
+        - cluster.local/ns/shop/sa/cart
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/stock/*"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: orders-allow
+spec:
+  selector:
+    matchLabels: {app: orders}
+  action: ALLOW
+  rules:
+  - from:
+    - source:                                                  # (1)
+        principals: [cluster.local/ns/ingress/sa/public-istio]
+        requestPrincipals: ["*"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/orders/*"]
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/shop/sa/curl
+        - cluster.local/ns/shop/sa/default
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/orders/*"]

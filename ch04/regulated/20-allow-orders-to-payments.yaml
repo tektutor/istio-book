@@ -1,0 +1,21 @@
+# Allow one caller, one method and one path. The caller is named by
+# its workload identity, not by an IP address.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: payments-allow-orders
+  namespace: payments
+spec:
+  selector:
+    matchLabels:
+      app: payments
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/shop/sa/orders     # (1)
+    to:
+    - operation:
+        methods: ["POST"]                    # (2)
+        paths: ["/api/payments"]

@@ -1,0 +1,11 @@
+# A revision tag named "default" that follows the Istio resource. With
+# RevisionBased updates, namespaces labelled istio-injection=enabled or
+# istio.io/rev=default use whichever revision is active.
+apiVersion: sailoperator.io/v1
+kind: IstioRevisionTag
+metadata:
+  name: default
+spec:
+  targetRef:
+    kind: Istio
+    name: default

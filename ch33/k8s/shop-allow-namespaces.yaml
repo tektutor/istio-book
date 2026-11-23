@@ -1,0 +1,21 @@
+# Deny by default in shop, then allow every caller from the shop and
+# ingress namespaces. A first step: narrow it later to single callers,
+# as Chapter 31 did for inventory.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-nothing
+  namespace: shop
+spec: {}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-own-and-ingress
+  namespace: shop
+spec:
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        namespaces: ["shop", "ingress"]                        # (1)

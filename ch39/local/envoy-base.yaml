@@ -1,0 +1,28 @@
+# One Envoy listener on 127.0.0.1:18600 that answers 200 "ok" itself.
+# plugin-demo.sh puts one filter from filters/ in place of FILTER.
+static_resources:
+  listeners:
+  - name: test
+    address: {socket_address: {address: 127.0.0.1, port_value: 18600}}
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: test
+          route_config:
+            virtual_hosts:
+            - name: all
+              domains: ["*"]
+              routes:
+              - match: {prefix: /}
+                direct_response: {status: 200, body: {inline_string: "ok\n"}}
+          http_filters:
+#FILTER
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+                router.v3.Router"
+admin:
+  address: {socket_address: {address: 127.0.0.1, port_value: 18601}}

@@ -1,0 +1,22 @@
+# The inventory policy from ch31/istio/inventory-allow.yaml with one
+# mistake in it. Find it from the logs, not from this file.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: inventory-allow
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: inventory
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/shop/sa/order
+        - cluster.local/ns/shop/sa/cart
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/stock/*"]

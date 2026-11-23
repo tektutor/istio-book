@@ -1,0 +1,35 @@
+# Envoy gets its listeners and clusters from the control plane.
+# Only the admin interface and the control plane address are static.
+node:
+  id: proxy-1
+  cluster: shop
+admin:
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 9901 }
+dynamic_resources:
+  lds_config:                                  # (1)
+    resource_api_version: V3
+    api_config_source:
+      api_type: REST
+      transport_api_version: V3
+      cluster_names: [control_plane]
+      refresh_delay: 1s
+  cds_config:                                  # (2)
+    resource_api_version: V3
+    api_config_source:
+      api_type: REST
+      transport_api_version: V3
+      cluster_names: [control_plane]
+      refresh_delay: 1s
+static_resources:
+  clusters:
+  - name: control_plane                        # (3)
+    type: STATIC
+    connect_timeout: 1s
+    load_assignment:
+      cluster_name: control_plane
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: 127.0.0.1, port_value: 18000 }

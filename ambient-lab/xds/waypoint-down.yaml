@@ -1,0 +1,4 @@
+# The waypoint's only pod is not ready, for example because it crashed
+# or its node went away. The Service keeps its waypoint.
+setWorkloads:
+  waypoint: { status: Unhealthy }

@@ -1,0 +1,17 @@
+# A deliberately tiny connection pool for inventory, so that Fortio can
+# trip it: one connection, one waiting request, one request per
+# connection. Every client proxy counts these limits on its own.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  host: inventory
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 1                 # (1)
+      http:
+        http1MaxPendingRequests: 1        # (2)
+        maxRequestsPerConnection: 1       # (3)

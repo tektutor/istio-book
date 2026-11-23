@@ -1,0 +1,8 @@
+# A test namespace that enforces the restricted Pod Security level.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: psa-test
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/warn: restricted

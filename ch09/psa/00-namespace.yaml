@@ -1,0 +1,10 @@
+# A namespace that enforces the restricted Pod Security Standard and
+# also asks for sidecar injection.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: psa-demo
+  labels:
+    pod-security.kubernetes.io/enforce: restricted    # (1)
+    pod-security.kubernetes.io/enforce-version: latest
+    istio-injection: enabled

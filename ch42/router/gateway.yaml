@@ -1,0 +1,23 @@
+# The cell router: an Istio gateway in front of all cells.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: router
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: cell-router
+  namespace: router
+spec:
+  gatewayClassName: istio
+  infrastructure:
+    annotations:
+      proxy.istio.io/config: |                              # (1)
+        proxyStatsMatcher:
+          inclusionRegexps:
+          - ".*outlier_detection.*"
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP

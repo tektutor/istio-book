@@ -1,0 +1,19 @@
+# R1: the stable and canary Services that the release moves traffic
+# between. Callers keep calling the Service "inventory".
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-stable
+spec:
+  selector: {app: inventory}
+  ports:
+  - {name: http, port: 8080, appProtocol: http}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-canary
+spec:
+  selector: {app: inventory}
+  ports:
+  - {name: http, port: 8080, appProtocol: http}

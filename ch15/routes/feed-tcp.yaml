@@ -1,0 +1,31 @@
+# The price feed from Chapter 14, offered to partners on its own TCP
+# port. A TCPRoute has no hostnames or paths: it forwards a listener's
+# connections to a backend.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: partners
+  namespace: shop
+spec:
+  gatewayClassName: istio
+  listeners:
+  - name: feed
+    port: 7070
+    protocol: TCP                                  # (1)
+    allowedRoutes:
+      kinds:
+      - kind: TCPRoute
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: TCPRoute
+metadata:
+  name: feed
+  namespace: shop
+spec:
+  parentRefs:
+  - name: partners
+    sectionName: feed
+  rules:
+  - backendRefs:
+    - name: feed
+      port: 7070

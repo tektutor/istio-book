@@ -1,0 +1,20 @@
+# A layer 4 policy with a selector: only productpage may connect to the
+# reviews pods. ztunnel enforces it on the pods' node. With a waypoint in
+# front of reviews, the connection comes from the waypoint instead, so
+# the waypoint's identity must be allowed too.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: reviews-l4
+  namespace: bookinfo
+spec:
+  selector:
+    matchLabels:
+      app: reviews
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - tektutor.org/ns/bookinfo/sa/bookinfo-productpage
+        - tektutor.org/ns/bookinfo/sa/waypoint                 # (1)

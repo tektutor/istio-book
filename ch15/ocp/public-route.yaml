@@ -1,0 +1,17 @@
+# OpenShift only: a Route from the OpenShift router to the shared
+# gateway. TLS ends at the router; the gateway gets plain HTTP.
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: bookinfo
+  namespace: ingress
+spec:
+  host: bookinfo.apps-crc.testing
+  to:
+    kind: Service
+    name: public-istio
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

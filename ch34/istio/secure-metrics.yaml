@@ -1,0 +1,15 @@
+# Metrics over mutual TLS, Istio 1.31. Install it on top of the lab
+# installation and the earlier overlays:
+#   istioctl install -f ch13/istio/lab-install-ambient.yaml \
+#     -f ch29/istio/trust-domain.yaml -f ch33/istio/hardened.yaml \
+#     -f ch34/istio/secure-metrics.yaml -y
+# Then replace Prometheus with samples/addons/extras/
+# prometheus-secure-metrics.yaml, and restart the workloads.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  meshConfig:
+    defaultConfig:
+      proxyMetadata:
+        ENVOY_SECURE_MERGED_METRICS_PORT: "15092"                # (1)
+        METRICS_LOCALHOST_ACCESS_ONLY: "true"                    # (2)

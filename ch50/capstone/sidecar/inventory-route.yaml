@@ -1,0 +1,17 @@
+# R1: the route that Argo Rollouts changes. The client sidecars apply it.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: inventory
+spec:
+  hosts:
+  - inventory.shop.svc.cluster.local
+  http:
+  - name: primary
+    route:
+    - destination:
+        host: inventory-stable.shop.svc.cluster.local
+      weight: 100
+    - destination:
+        host: inventory-canary.shop.svc.cluster.local
+      weight: 0

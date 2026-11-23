@@ -1,0 +1,82 @@
+# Two clusters in front of the same two inventory instances, built the
+# way Istio builds them:
+#   port 18100: no DestinationRule, so LEAST_REQUEST, Istio's default
+#   port 18200: consistentHash on the header x-shop-user, so a hash
+#               policy on the route and a RING_HASH cluster
+static_resources:
+  listeners:
+  - name: least_request
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18100 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: least
+          route_config:
+            virtual_hosts:
+            - name: inventory
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route: { cluster: inventory_least }
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+                router.v3.Router"
+  - name: consistent_hash
+    address:
+      socket_address: { address: 127.0.0.1, port_value: 18200 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: hash
+          route_config:
+            virtual_hosts:
+            - name: inventory
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route:
+                  cluster: inventory_hash
+                  hash_policy:                               # (1)
+                  - header: { header_name: x-shop-user }
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+                router.v3.Router"
+  clusters:
+  - name: inventory_least
+    connect_timeout: 1s
+    lb_policy: LEAST_REQUEST                                 # (2)
+    load_assignment:
+      cluster_name: inventory_least
+      endpoints:
+      - lb_endpoints:
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18081 } } }
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18082 } } }
+  - name: inventory_hash
+    connect_timeout: 1s
+    lb_policy: RING_HASH                                     # (3)
+    ring_hash_lb_config:
+      minimum_ring_size: 1024
+    load_assignment:
+      cluster_name: inventory_hash
+      endpoints:
+      - lb_endpoints:
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18081 } } }
+        - endpoint: { address: { socket_address:
+            { address: 127.0.0.1, port_value: 18082 } } }
+admin:
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 19903 }

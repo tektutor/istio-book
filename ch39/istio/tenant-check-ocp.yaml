@@ -1,0 +1,26 @@
+# tenant-check.yaml for OpenShift: the image comes from the internal
+# registry, which needs a pull secret of type dockerconfigjson.
+apiVersion: extensions.istio.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: tenant-check
+  namespace: ingress
+spec:
+  targetRefs:
+  - kind: Gateway                                              # (1)
+    group: gateway.networking.k8s.io
+    name: public
+  url: "oci://image-registry.openshift-image-registry.svc:5000/ingress/\
+    tenant-check:1.0.0"
+  imagePullSecret: wasm-pull                                   # (7)
+  imagePullPolicy: IfNotPresent                                # (2)
+  phase: AUTHN                                                 # (3)
+  failStrategy: FAIL_CLOSE                                     # (4)
+  match:
+  - ports:                                                     # (5)
+    - number: 80
+  pluginConfig:                                                # (6)
+    header: x-tenant
+    tenants:
+    - acme
+    - globex

@@ -1,0 +1,8 @@
+# Every Bookinfo pod has a sidecar, injected with the ambient profile;
+# no pod is in ambient mode. This is the shop before Chapter 37.
+setWorkloads:
+  curl: &sidecar { protocol: HBONE, nativeTunnel: true }
+  productpage-v1: *sidecar
+  reviews-v1: *sidecar
+  reviews-v2: *sidecar
+  ratings-v1: *sidecar

@@ -1,0 +1,23 @@
+# Zone-aware load balancing, new in Istio 1.31. Callers need
+# ISTIO_META_ENABLE_SELF_DISCOVERY=true, as in self-discovery.yaml.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: ratings
+  namespace: bookinfo
+spec:
+  host: ratings.bookinfo.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_REQUEST
+      zoneAwareLbSetting:
+        enabled: true
+        minClusterSize: 1                 # (1)
+        failover:                         # (2)
+        - from: lab
+          to: dr
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 5s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 100

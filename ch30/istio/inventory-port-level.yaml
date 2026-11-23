@@ -1,0 +1,17 @@
+# Port-level settings: inventory is STRICT, except port 8080, which
+# also accepts plain text. Port-level settings need a selector, and
+# name the port that the container listens on.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: inventory
+  mtls:
+    mode: STRICT
+  portLevelMtls:                                               # (1)
+    8080:
+      mode: PERMISSIVE

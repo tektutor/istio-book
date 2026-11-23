@@ -1,0 +1,25 @@
+# The shared entry point to the lab, owned by the platform team. It lives
+# in its own namespace and accepts routes only from namespaces that carry
+# the label below.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: public
+  namespace: ingress
+spec:
+  gatewayClassName: istio                          # (1)
+  listeners:
+  - name: http                                     # (2)
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Selector                             # (3)
+        selector:
+          matchLabels:
+            tektutor.org/ingress: allowed

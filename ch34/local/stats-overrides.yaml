@@ -1,0 +1,18 @@
+# What istiod writes into the istio.stats filter of the inventory
+# sidecar for two Telemetry resources. telemetry-demo.sh adds each one
+# to inventory-sidecar.yaml in turn.
+path_label:                       # from ch34/istio/path-label.yaml
+  metrics:
+  - name: requests_total
+    dimensions:
+      request_path: request.url_path
+shop_metrics:                     # from ch34/istio/shop-metrics.yaml
+  metrics:
+  - { name: request_bytes, drop: true }
+  - { name: response_bytes, drop: true }
+  - name: requests_total
+    dimensions:
+      api: >-
+        request.url_path.startsWith('/api/stock/') ? 'stock' :
+        request.url_path.startsWith('/api/orders/') ? 'orders' :
+        'other'

@@ -1,0 +1,6 @@
+# A namespace without the injection label, for the test client that
+# plays a caller outside the mesh. Create it once with admin rights.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: legacy

@@ -1,0 +1,31 @@
+# Only members of the group mesh-admins may create or change mesh-wide
+# policy: resources in the root namespace apply to every workload.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: protect-mesh-root-namespace
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    namespaceSelector:                                       # (1)
+      matchLabels:
+        kubernetes.io/metadata.name: istio-system
+    resourceRules:
+    - apiGroups: ["networking.istio.io", "security.istio.io",
+                  "telemetry.istio.io", "extensions.istio.io"]
+      apiVersions: ["*"]
+      operations: ["CREATE", "UPDATE"]                       # (2)
+      resources: ["envoyfilters", "sidecars", "authorizationpolicies",
+                  "peerauthentications", "requestauthentications",
+                  "telemetries", "wasmplugins"]
+  validations:
+  - expression: '"mesh-admins" in request.userInfo.groups'   # (3)
+    message: "Mesh-wide resources need the group mesh-admins."
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: protect-mesh-root-namespace
+spec:
+  policyName: protect-mesh-root-namespace
+  validationActions: ["Deny"]                                # (4)

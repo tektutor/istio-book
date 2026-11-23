@@ -1,0 +1,21 @@
+# Deny by default in bookinfo, then allow every caller from the bookinfo and
+# ingress namespaces. A first step: narrow it later to single callers,
+# as Chapter 31 did for inventory.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-nothing
+  namespace: bookinfo
+spec: {}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-own-and-ingress
+  namespace: bookinfo
+spec:
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        namespaces: ["bookinfo", "ingress"]                        # (1)

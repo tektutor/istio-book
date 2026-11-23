@@ -1,0 +1,101 @@
+# What istiod sends the ztunnels of the local lab, in ztunnel's own
+# format: the Bookinfo pods and Services in ambient mode, no waypoint
+# and no policy. The other files in this folder change this one.
+workloads:
+- uid: Kubernetes//Pod/bookinfo/curl
+  name: curl
+  namespace: bookinfo
+  serviceAccount: curl
+  trustDomain: tektutor.org
+  workloadIps: [10.244.1.5]
+  protocol: HBONE                                   # (1)
+  node: lab
+  clusterId: Kubernetes
+  workloadName: curl
+  canonicalName: curl
+  canonicalRevision: latest
+  services: {}
+- uid: Kubernetes//Pod/bookinfo/productpage-v1
+  name: productpage-v1
+  namespace: bookinfo
+  serviceAccount: bookinfo-productpage
+  trustDomain: tektutor.org
+  workloadIps: [10.244.1.10]
+  protocol: HBONE
+  node: lab
+  clusterId: Kubernetes
+  workloadName: productpage-v1
+  canonicalName: productpage
+  canonicalRevision: v1
+  services:
+    bookinfo/productpage.bookinfo.svc.cluster.local: {9080: 9080}
+- uid: Kubernetes//Pod/bookinfo/reviews-v1
+  name: reviews-v1
+  namespace: bookinfo
+  serviceAccount: bookinfo-reviews
+  trustDomain: tektutor.org
+  workloadIps: [10.244.1.11]
+  protocol: HBONE
+  node: lab
+  clusterId: Kubernetes
+  workloadName: reviews-v1
+  canonicalName: reviews
+  canonicalRevision: v1
+  services:
+    bookinfo/reviews.bookinfo.svc.cluster.local: {9080: 9080}
+    bookinfo/reviews-v1.bookinfo.svc.cluster.local: {9080: 9080}
+- uid: Kubernetes//Pod/bookinfo/reviews-v2
+  name: reviews-v2
+  namespace: bookinfo
+  serviceAccount: bookinfo-reviews
+  trustDomain: tektutor.org
+  workloadIps: [10.244.2.11]
+  protocol: HBONE
+  node: lab-m02
+  clusterId: Kubernetes
+  workloadName: reviews-v2
+  canonicalName: reviews
+  canonicalRevision: v2
+  services:
+    bookinfo/reviews.bookinfo.svc.cluster.local: {9080: 9080}
+    bookinfo/reviews-v2.bookinfo.svc.cluster.local: {9080: 9080}
+- uid: Kubernetes//Pod/bookinfo/ratings-v1
+  name: ratings-v1
+  namespace: bookinfo
+  serviceAccount: bookinfo-ratings
+  trustDomain: tektutor.org
+  workloadIps: [10.244.2.12]
+  protocol: HBONE
+  node: lab-m02
+  clusterId: Kubernetes
+  workloadName: ratings-v1
+  canonicalName: ratings
+  canonicalRevision: v1
+  services:
+    bookinfo/ratings.bookinfo.svc.cluster.local: {9080: 9080}
+services:
+- name: productpage
+  namespace: bookinfo
+  hostname: productpage.bookinfo.svc.cluster.local
+  vips: [/10.96.10.10]                              # (2)
+  ports: {9080: 9080}
+- name: reviews
+  namespace: bookinfo
+  hostname: reviews.bookinfo.svc.cluster.local
+  vips: [/10.96.10.11]
+  ports: {9080: 9080}
+- name: reviews-v1                                 # (3)
+  namespace: bookinfo
+  hostname: reviews-v1.bookinfo.svc.cluster.local
+  vips: [/10.96.10.13]
+  ports: {9080: 9080}
+- name: reviews-v2
+  namespace: bookinfo
+  hostname: reviews-v2.bookinfo.svc.cluster.local
+  vips: [/10.96.10.14]
+  ports: {9080: 9080}
+- name: ratings
+  namespace: bookinfo
+  hostname: ratings.bookinfo.svc.cluster.local
+  vips: [/10.96.10.12]
+  ports: {9080: 9080}

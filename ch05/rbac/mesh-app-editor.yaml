@@ -1,0 +1,35 @@
+# What an application team may change in its own namespaces. Bind it
+# with a RoleBinding per namespace, never with a ClusterRoleBinding.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mesh-app-editor
+rules:
+- apiGroups: ["gateway.networking.k8s.io"]                     # (1)
+  resources: ["httproutes", "grpcroutes"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["networking.istio.io"]                           # (2)
+  resources: ["virtualservices", "destinationrules", "serviceentries"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["security.istio.io"]                             # (3)
+  resources: ["authorizationpolicies", "requestauthentications"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["security.istio.io", "telemetry.istio.io",       # (4)
+              "networking.istio.io", "gateway.networking.k8s.io"]
+  resources: ["peerauthentications", "telemetries", "sidecars",
+              "gateways", "envoyfilters"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: shop-team-mesh-editor
+  namespace: shop
+subjects:
+- kind: Group
+  apiGroup: rbac.authorization.k8s.io
+  name: shop-team                                              # (5)
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: mesh-app-editor

@@ -1,0 +1,44 @@
+# The shop's public routes on an Istio ingress gateway with the classic
+# APIs: CORS for the React developers, a redirect for an old path, and
+# the response headers the shop does not want to expose.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: shop-edge
+  namespace: shop
+spec:
+  hosts:
+  - shop.tektutor.test
+  gateways:
+  - shop/shop-gateway                              # (1)
+  http:
+  - name: old-catalogue
+    match:
+    - uri:
+        prefix: /catalogue/
+    redirect:
+      prefixRewrite: /products/                    # (2)
+      redirectCode: 301
+  - name: cart-api
+    match:
+    - uri:
+        prefix: /api/cart/
+    corsPolicy:                                    # (3)
+      allowOrigins:
+      - exact: http://localhost:5173
+      allowMethods: ["GET", "POST", "DELETE"]
+      allowHeaders: ["content-type", "x-shop-user"]
+      maxAge: 24h
+    headers:
+      request:
+        set:
+          x-shop-entry: edge                       # (4)
+      response:
+        remove: ["x-envoy-upstream-service-time"]
+    route:
+    - destination:
+        host: cart
+  - name: frontend
+    route:
+    - destination:
+        host: frontend

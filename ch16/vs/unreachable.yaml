@@ -1,0 +1,21 @@
+# A broken VirtualService: the first rule matches every request, so the
+# rule for testers is never reached.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: reviews-broken
+  namespace: bookinfo
+spec:
+  hosts:
+  - reviews
+  http:
+  - route:
+    - destination:
+        host: reviews-v1
+  - match:
+    - headers:
+        end-user:
+          exact: melissa
+    route:
+    - destination:
+        host: reviews-v3

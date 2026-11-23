@@ -1,0 +1,13 @@
+# Keeps each user on one cart pod: the caller's proxy hashes the header
+# x-shop-user and picks the pod from the hash.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: cart
+  namespace: shop
+spec:
+  host: cart                                       # (1)
+  trafficPolicy:
+    loadBalancer:
+      consistentHash:
+        httpHeaderName: x-shop-user                # (2)

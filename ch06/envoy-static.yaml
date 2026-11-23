@@ -1,0 +1,49 @@
+# Lab 6.1: a static Envoy configuration. Envoy listens on port 10000
+# and sends every /api/ request to the inventory service.
+admin:
+  address:
+    socket_address: { address: 0.0.0.0, port_value: 9901 }    # (1)
+
+static_resources:
+  listeners:
+  - name: shop_http                                            # (2)
+    address:
+      socket_address: { address: 0.0.0.0, port_value: 10000 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager    # (3)
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.network.\
+            http_connection_manager.v3.HttpConnectionManager"
+          stat_prefix: shop
+          access_log:                                          # (4)
+          - name: envoy.access_loggers.stdout
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.access_loggers.\
+                stream.v3.StdoutAccessLog"
+          route_config:
+            name: shop_routes
+            virtual_hosts:                                     # (5)
+            - name: shop
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/api/" }
+                route: { cluster: inventory, timeout: 2s }     # (6)
+          http_filters:
+          - name: envoy.filters.http.router                    # (7)
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.filters.http.\
+                router.v3.Router"
+
+  clusters:
+  - name: inventory                                            # (8)
+    type: STRICT_DNS
+    connect_timeout: 1s
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: inventory
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: inventory, port_value: 8080 }

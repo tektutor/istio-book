@@ -1,0 +1,41 @@
+# The feed client with DNS proxying turned on for its sidecar.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feed-client
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feed-client
+  template:
+    metadata:
+      labels:
+        app: feed-client
+        version: v1
+      annotations:
+        proxy.istio.io/config: |                           # (1)
+          proxyMetadata:
+            ISTIO_META_DNS_CAPTURE: "true"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: client
+        image: tektutor/feed:1.0
+        imagePullPolicy: IfNotPresent
+        command: ["sleep", "infinity"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            memory: 48Mi
