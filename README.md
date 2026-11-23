@@ -112,5 +112,4 @@ You may use it in your own work.
 ## Feedback
 
 If you find a mistake, or a lab that does not work on a newer release, write to
-jegan@tektutor.org. Corrections for each printing are published on the companion
-site, www.tektutor.org.
+jegan@tektutor.org. 
